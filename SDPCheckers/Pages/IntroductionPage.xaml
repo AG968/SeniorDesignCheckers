@@ -1,0 +1,19 @@
+﻿<UserControl x:Class="SDPCheckers.Pages.IntroductionPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SDPCheckers.Pages"
+             xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+    <Grid>
+        <Viewbox>
+            <StackPanel>
+                <Label Content="SDP Checkers" FontFamily="Brush Script MT" HorizontalAlignment="Center" FontSize="40"></Label>
+                <TextBox x:Name="playerNameInput" Controls:TextBoxHelper.Watermark="Player Name" Width="100" Margin="0,10"/>
+                <Button Content="Continue" Click="continueClicked" IsEnabled="{Binding ElementName=playerNameInput,Path=Text.Length}"  HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Viewbox>
+    </Grid>
+</UserControl>
