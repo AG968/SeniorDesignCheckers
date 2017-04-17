@@ -14,7 +14,7 @@ namespace SDPCheckers
         public MainWindow()
         {
             InitializeComponent();
-            this.currentPage.Content = new IntroductionPage();
+            this.currentPage.Content = new GameBoard();
         }
     }
 }
