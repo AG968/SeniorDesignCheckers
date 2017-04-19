@@ -5,10 +5,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:SDPCheckers.Pages"
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300">
-    <Grid>
+             d:DesignHeight="300" d:DesignWidth="300"
+             >
+    
+    <Grid MouseRightButtonDown="Grid_MouseRightButtonDown">
         <Viewbox>
-        <Grid Margin="20" >
+        <Grid x:Name="BoardGrid" Margin="20" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
                 <ColumnDefinition/>
@@ -26,94 +28,102 @@
                 <RowDefinition/>
             </Grid.RowDefinitions>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="0" Grid.Column="0">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Blue.png"/>
+                    <Grid x:Name="G07" Grid.Background="Black">
+                        <Image x:Uid="0,7" x:Name="T07"/>
                     </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="1" Grid.Column="0"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="2" Grid.Column="0">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Blue.png"/>
+                    <Grid x:Name="G05" Grid.Background="Black">
+                        <Image x:Uid="0,5" x:Name="T05"/>
                     </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="3" Grid.Column="0"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="4" Grid.Column="0">
-                    <Grid Grid.Background="Black"/>
+                    <Grid x:Name="G03" Grid.Background="Black">
+                        <Image x:Uid="0,3" x:Name="T03"/>
+                    </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="5" Grid.Column="0"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="6" Grid.Column="0">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Orange.png"/>
+                    <Grid x:Name="G01" Grid.Background="Black">
+                        <Image x:Uid="0,1" x:Name="T01"/>
                     </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="7" Grid.Column="0"/>
 
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="0" Grid.Column="1"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="1" Grid.Column="1">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Blue.png"/>
+                    <Grid x:Name="G16" Grid.Background="Black">
+                        <Image x:Uid="1,6" x:Name="T16"/>
                     </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="2" Grid.Column="1"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="3" Grid.Column="1">
-                    <Grid Grid.Background="Black"/>
+                    <Grid x:Name="G14" Grid.Background="Black">
+                        <Image x:Uid="1,4" x:Name="T14"/>
+                    </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="4" Grid.Column="1"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="5" Grid.Column="1">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Orange.png"/>
+                    <Grid x:Name="G12" Grid.Background="Black">
+                        <Image x:Uid="1,2" x:Name="T12"/>
                     </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="6" Grid.Column="1"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="7" Grid.Column="1">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Orange.png"/>
+                    <Grid x:Name="G10" Grid.Background="Black">
+                        <Image x:Uid="1,0" x:Name="T10"/>
                     </Grid>
                 </Border>
 
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="0" Grid.Column="2">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Blue.png"/>
+                    <Grid x:Name="G27" Grid.Background="Black">
+                        <Image x:Uid="2,7" x:Name="T27"/>
                     </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="1" Grid.Column="2"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="2" Grid.Column="2">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Blue.png"/>
+                    <Grid x:Name="G25" Grid.Background="Black">
+                        <Image x:Uid="2,5" x:Name="T25"/>
                     </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="3" Grid.Column="2"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="4" Grid.Column="2">
-                    <Grid Grid.Background="Black"/>
+                    <Grid x:Name="G23" Grid.Background="Black">
+                        <Image x:Uid="2,3" x:Name="T23"/>
+                    </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="5" Grid.Column="2"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="6" Grid.Column="2">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Orange.png"/>
+                    <Grid x:Name="G21" Grid.Background="Black">
+                        <Image x:Uid="2,1" x:Name="T21"/>
                     </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="7" Grid.Column="2"/>
             
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="0" Grid.Column="3"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="1" Grid.Column="3">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Blue.png"/>
+                    <Grid x:Name="G36" Grid.Background="Black">
+                        <Image x:Uid="3,6" x:Name="T36"/>
                     </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="2" Grid.Column="3"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="3" Grid.Column="3">
-                    <Grid Grid.Background="Black"/>
+                    <Grid x:Name="G34" Grid.Background="Black">
+                        <Image x:Uid="3,4" x:Name="T34"/>
+                    </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="4" Grid.Column="3"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="5" Grid.Column="3">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Orange.png"/>
+                    <Grid x:Name="G32" Grid.Background="Black">
+                        <Image x:Uid="3,2" x:Name="T32"/>
                     </Grid>
                 </Border>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="6" Grid.Column="3"/>
                 <Border Width="80" Height="80" BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Row="7" Grid.Column="3">
-                    <Grid Grid.Background="Black">
-                        <Image Source="pack://application:,,,/SDPCheckers;component//Images/Checkers_Piece_Orange.png"/>
+                    <Grid x:Name="G30" Grid.Background="Black">
+                        <Image x:Uid="3,0" x:Name="T30"/>
                     </Grid>
                 </Border>
 
