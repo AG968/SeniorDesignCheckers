@@ -14,7 +14,7 @@ namespace SDPCheckers.GameClasses
 
 
         public GamePiece tilePiece = null;
-        int[] position = new int[2];
+        public int[] position = new int[2];
         private const int XPOS = 0;
         private const int YPOS = 1;
 

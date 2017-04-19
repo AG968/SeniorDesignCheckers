@@ -14,7 +14,7 @@ namespace SDPCheckers.Pages
     public partial class GameBoard : UserControl
     {
         private Game Game = null;
-        private Image currentSelectedPiece = null;
+        private GameTile currentSelectedPiece = null;
         private Grid[,] boardTileGrids = new Grid[4, 8];
         private List<int[]> highlightedPossibleMoves = new List<int[]>();
 
@@ -54,9 +54,64 @@ namespace SDPCheckers.Pages
             boardTileGrids[3, 6] = G36;
             boardTileGrids[0, 7] = G07;
             boardTileGrids[2, 7] = G27;
-           
 
+            for(int x = 0; x < Game.boardWidth; ++x)
+            {
+                for(int y = 0; y < Game.boardHeight; ++y)
+                {
+                    if(boardTileGrids[x, y] == null) continue;
+                    boardTileGrids[x, y].MouseEnter += boardTileMouseEnter;
+                    boardTileGrids[x, y].MouseLeave += boardTileMouseExit;
+                    boardTileGrids[x, y].MouseLeftButtonDown += boardTileMouseClick;
+                }
+            }
         }
+
+        private void boardTileMouseClick(object sender, EventArgs e)
+        {
+            Grid tileToMoveTo = (sender as Grid);
+            if(tileToMoveTo.Opacity == PLAYABLE && currentSelectedPiece != null)
+            {
+                ///////////////
+                Image tileToMoveTo2 = (tileToMoveTo.Children[0] as Image);
+                string[] positionToMoveTo = tileToMoveTo2.Uid.Split(',');
+
+                GameTile oldTile = Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]];
+
+                //Move piece to new tile
+                Game.boardTiles[Convert.ToInt32(positionToMoveTo[0]), Convert.ToInt32( positionToMoveTo[1])] = oldTile;
+
+                //Remove piece from old tile
+                //Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]] = null;
+
+                //Redraw piece
+
+                Game.boardTiles[Convert.ToInt32(positionToMoveTo[0]),Convert.ToInt32(positionToMoveTo[1])].drawTileImage();
+
+                Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]].tilePiece = null;
+                Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]].drawTileImage(); 
+                //Game.boardTiles[Convert.ToInt32(position[0]), Convert.ToInt32(position[1])].
+                //(tileToMoveTo.Children as Image)
+            }
+        }
+
+        private void boardTileMouseEnter(object sender, EventArgs e)
+        {
+            if((sender as Grid).Opacity == PLAYABLE)
+            {
+                (App.Current.MainWindow).Cursor = Cursors.Hand;
+            }
+        }
+
+        private void boardTileMouseExit(object sender, EventArgs e)
+        {
+            if ((sender as Grid).Opacity == PLAYABLE)
+            {
+                (App.Current.MainWindow).Cursor = Cursors.Arrow;
+            }
+        }
+
+
 
         private void initializeBoardTileImageSources()
         {
@@ -128,10 +183,11 @@ namespace SDPCheckers.Pages
             //Check if piece is your piece
             if (!isMyPiece(sender)) return;
 
-            if (currentSelectedPiece != null) currentSelectedPiece.Opacity = 1;
+            if (currentSelectedPiece != null) currentSelectedPiece.tileImage.Opacity = 1;
 
-            currentSelectedPiece = sender as Image;
-            currentSelectedPiece.Opacity = 0.5;
+            string[] tilePosition = (sender as Image).Uid.Split(',');
+            currentSelectedPiece = Game.boardTiles[Convert.ToInt32( tilePosition[0]),Convert.ToInt32( tilePosition[1])];
+            currentSelectedPiece.tileImage.Opacity = 0.5;
 
             //Clear previously highlighted tiles
             foreach(int[] position in highlightedPossibleMoves)
@@ -139,9 +195,8 @@ namespace SDPCheckers.Pages
                 boardTileGrids[position[0], position[1]].Opacity = NOTPLAYABLE;
             }
             highlightedPossibleMoves.Clear();
-
-            string[] tilePosition = currentSelectedPiece.Uid.Split(',');
-           highlightPossibleMoves(Convert.ToInt32(tilePosition[0]), Convert.ToInt32(tilePosition[1]));
+            
+           highlightPossibleMoves(currentSelectedPiece.position[0], currentSelectedPiece.position[1]);
            var x = ((((sender as Image).Parent as Grid).Parent) as Border);
         }
 
@@ -215,7 +270,7 @@ namespace SDPCheckers.Pages
         private void Grid_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (currentSelectedPiece == null) return;
-            currentSelectedPiece.Opacity = 1;
+            currentSelectedPiece.tileImage.Opacity = 1;
             currentSelectedPiece = null;
         }
     }
