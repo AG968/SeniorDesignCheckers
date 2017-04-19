@@ -1,5 +1,6 @@
 ﻿using SDPCheckers.GameClasses;
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,17 +13,27 @@ namespace SDPCheckers.Pages
     /// </summary>
     public partial class GameBoard : UserControl
     {
-        private Game Game = new Game();
+        private Game Game = null;
         private Image currentSelectedPiece = null;
         private Grid[,] boardTileGrids = new Grid[4, 8];
+        private List<int[]> highlightedPossibleMoves = new List<int[]>();
 
-        public GameBoard()
+        //Constants to set the opacity of a tile 
+        private const double PLAYABLE = 0.5;
+        private const double NOTPLAYABLE = 1;
+
+        public GameBoard(GamePiece.Player player)
         {
+            Game = new Game(player);
+    
             InitializeComponent();
             initializeBoardTileImageSources();
             initializeTileIndexReferences();
             drawGameBoardPieces();
-            
+
+            //Rotate the board UI if you're player 2
+            boardAngle.Angle = player == GamePiece.Player.PLAYER1 ? 0 : 180;
+
         }
 
         private void initializeTileIndexReferences()
@@ -98,28 +109,107 @@ namespace SDPCheckers.Pages
 
         private void initializeMouseEnterPieceEvent(object sender, EventArgs e)
         {
-            (App.Current.MainWindow).Cursor = Cursors.Hand;
+            if (isMyPiece(sender))
+            {
+                (App.Current.MainWindow).Cursor = Cursors.Hand;
+            }
         }
 
         private void initializeMouseLeavePieceEvent(object sender, EventArgs e)
         {
-            (App.Current.MainWindow).Cursor = Cursors.Arrow;
+            if (isMyPiece(sender))
+            {
+                (App.Current.MainWindow).Cursor = Cursors.Arrow;
+            }
         }
 
         private void initializeMouseLeftClickPieceEvent(object sender, EventArgs e)
         {
-            if (currentSelectedPiece != null) currentSelectedPiece.Opacity = 1; ;
+            //Check if piece is your piece
+            if (!isMyPiece(sender)) return;
+
+            if (currentSelectedPiece != null) currentSelectedPiece.Opacity = 1;
+
             currentSelectedPiece = sender as Image;
             currentSelectedPiece.Opacity = 0.5;
+
+            //Clear previously highlighted tiles
+            foreach(int[] position in highlightedPossibleMoves)
+            {
+                boardTileGrids[position[0], position[1]].Opacity = NOTPLAYABLE;
+            }
+            highlightedPossibleMoves.Clear();
 
             string[] tilePosition = currentSelectedPiece.Uid.Split(',');
            highlightPossibleMoves(Convert.ToInt32(tilePosition[0]), Convert.ToInt32(tilePosition[1]));
            var x = ((((sender as Image).Parent as Grid).Parent) as Border);
         }
 
+        private bool isMyPiece(object sender)
+        {
+            Image piece = sender as Image;
+            string[] position = piece.Uid.Split(',');
+
+            return Game.boardTiles[Convert.ToInt32(position[0]), Convert.ToInt32(position[1])].tilePiece.player == Game.gamePlayer;
+            
+        }
+
         private void highlightPossibleMoves(int xPos, int yPos)
         {
-            boardTileGrids[3, 4].Opacity = 0.5;
+            //Player 1's and Player 2's left and right possible diagonals are different
+            switch (Game.gamePlayer)
+            {
+                case GamePiece.Player.PLAYER1:
+                    //Player 1 left diagonal
+                    if(xPos - 1 >= 0 && yPos + 1 < Game.boardHeight)
+                    {
+                        if(Game.boardTiles[xPos-1,yPos+1].tilePiece == null)
+                        {
+                            highlightedPossibleMoves.Add(new int[] { xPos - 1, yPos + 1 });
+                        }
+                        //Check if you can jump over a piece to your left
+                        else if(Game.boardTiles[xPos-1,yPos+1].tilePiece.player != Game.gamePlayer)
+                        {
+                            if(xPos - 2 >= 0 && yPos + 2 < Game.boardHeight)
+                            {
+                                if(Game.boardTiles[xPos-2,yPos+2].tilePiece == null)
+                                {
+                                    highlightedPossibleMoves.Add(new int[] { xPos - 2, yPos + 2 });
+                                }
+                            }
+                        }
+                    }
+                    //Player 1 right diagonal
+                    if (xPos + 1 < Game.boardWidth && yPos + 1 < Game.boardHeight)
+                    {
+                        if (Game.boardTiles[xPos + 1, yPos + 1].tilePiece == null)
+                        {
+                            highlightedPossibleMoves.Add(new int[] { xPos + 1, yPos + 1 });
+                        }
+                        //Check if you can jump over a piece to your left
+                        else if (Game.boardTiles[xPos + 1, yPos + 1].tilePiece.player != Game.gamePlayer)
+                        {
+                            if (xPos + 2 < Game.boardWidth && yPos + 2 < Game.boardHeight)
+                            {
+                                if (Game.boardTiles[xPos + 2, yPos + 2].tilePiece == null)
+                                {
+                                    highlightedPossibleMoves.Add(new int[] { xPos + 2, yPos + 2 });
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case GamePiece.Player.PLAYER2:
+                    break;
+                default:
+                    break;
+            }
+            
+            foreach(int[] position in highlightedPossibleMoves)
+            {
+                boardTileGrids[position[0], position[1]].Opacity = PLAYABLE;
+            }
+            //boardTileGrids[3, 4].Opacity = 0.5;
         }
 
         private void Grid_MouseRightButtonDown(object sender, MouseButtonEventArgs e)

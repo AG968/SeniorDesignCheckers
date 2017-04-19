@@ -9,8 +9,14 @@
              >
     
     <Grid MouseRightButtonDown="Grid_MouseRightButtonDown">
+ 
+
         <Viewbox>
-        <Grid x:Name="BoardGrid" Margin="20" >
+            
+        <Grid RenderTransformOrigin="0.5,0.5" Margin="20" >
+                <Grid.RenderTransform>
+                    <RotateTransform x:Name="boardAngle"/>
+                </Grid.RenderTransform>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
                 <ColumnDefinition/>
