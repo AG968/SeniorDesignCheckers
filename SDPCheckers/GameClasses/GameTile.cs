@@ -11,8 +11,8 @@ namespace SDPCheckers.GameClasses
 {
     public class GameTile
     {
-        private static BitmapImage PLAYER1PIECE = new BitmapImage(new Uri("pack://application:,,,/SDPCheckers;component/Images/Checkers_Piece_Blue.png", UriKind.Absolute));
-        private static BitmapImage PLAYER2PIECE = new BitmapImage(new Uri("pack://application:,,,/SDPCheckers;component/Images/Checkers_Piece_Orange.png", UriKind.Absolute));
+        private static BitmapImage PLAYER1PIECE = new BitmapImage(new Uri("pack://application:,,,/SDPCheckers;component/Images/Checkers_Piece_White.png", UriKind.Absolute));
+        private static BitmapImage PLAYER2PIECE = new BitmapImage(new Uri("pack://application:,,,/SDPCheckers;component/Images/Checkers_Piece_Red.png", UriKind.Absolute));
 
 
         public GamePiece tilePiece = null;
