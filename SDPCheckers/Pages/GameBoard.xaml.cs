@@ -23,7 +23,7 @@ namespace SDPCheckers.Pages
         private Grid[,] boardTileGrids = new Grid[4, 8];
 
         //Remember the tiles that were highlighted, so we know which to unhighlight when a move is made without having to loop through all the tiles
-        private List<int[]> highlightedPossibleMoves = new List<int[]>();
+        private List<int[]> possibleMoves = new List<int[]>();
 
         //Constants to set the opacity of a tile.  The opacity of a tile is how a tile is 'highlighted', but it is also used
         //to determine whether that specific tile is playable or not.
@@ -149,11 +149,11 @@ namespace SDPCheckers.Pages
             destinationTile.drawTileImage();
 
             //Unhighlight the possible moves that had been highlighted
-            foreach (int[] position in highlightedPossibleMoves)
+            foreach (int[] position in possibleMoves)
             {
                 boardTileGrids[position[0], position[1]].Opacity = NOTPLAYABLE;
             }
-            highlightedPossibleMoves.Clear();
+            possibleMoves.Clear();
 
             //Update cursor hand to arrow
             (App.Current.MainWindow).Cursor = Cursors.Arrow;
@@ -280,13 +280,19 @@ namespace SDPCheckers.Pages
             currentSelectedPiece.tileImage.Opacity = 0.5;
 
             //Clear previously highlighted tiles
-            foreach(int[] position in highlightedPossibleMoves)
+            foreach(int[] position in possibleMoves)
             {
                 boardTileGrids[position[0], position[1]].Opacity = NOTPLAYABLE;
             }
-            highlightedPossibleMoves.Clear();
-            
-           highlightPossibleMoves(currentSelectedPiece.position[0], currentSelectedPiece.position[1]);
+            possibleMoves.Clear();
+
+           possibleMoves = currentSelectedPiece.getPossibleMoves(Game.boardTiles,Game.gamePlayer);
+
+            //Highlight new possible moves
+            foreach (int[] position in possibleMoves)
+            {
+                boardTileGrids[position[0], position[1]].Opacity = PLAYABLE;
+            }
         }
 
 
@@ -303,195 +309,6 @@ namespace SDPCheckers.Pages
         }
 
         /// <summary>
-        /// Takes in the position of the piece that is selected.  Based on the player that the piece belongs to, it determines the
-        /// possible moves that can be made by the specified piece.
-        /// </summary>
-        /// <param name="xPos">x position of piece selected</param>
-        /// <param name="yPos">y position of piece selected</param>
-        private void highlightPossibleMoves(int xPos, int yPos)
-        {
-            //Player 1's and Player 2's left and right possible diagonals are different
-            switch (Game.gamePlayer)
-            {
-                case GamePiece.Player.PLAYER1:
-                    //Player 1 left diagonal, forward
-                    if(xPos - 1 >= 0 && yPos + 1 < Game.boardHeight)
-                    {
-                        if(Game.boardTiles[xPos-1,yPos+1].tilePiece == null)
-                        {
-                            highlightedPossibleMoves.Add(new int[] { xPos - 1, yPos + 1 });
-                        }
-                        //Check if you can jump over a piece to your left
-                        else if(Game.boardTiles[xPos-1,yPos+1].tilePiece.player != Game.gamePlayer)
-                        {
-                            if(xPos - 2 >= 0 && yPos + 2 < Game.boardHeight)
-                            {
-                                if(Game.boardTiles[xPos-2,yPos+2].tilePiece == null)
-                                {
-                                    highlightedPossibleMoves.Add(new int[] { xPos - 2, yPos + 2 });
-                                }
-                            }
-                        }
-                    }
-                    //Player 1 left diagonal, backward, for when a piece is a king
-                    if (Game.boardTiles[xPos, yPos].tilePiece.pieceType == GamePiece.PieceType.KING)
-                    {
-                        if (xPos - 1 >= 0 && yPos - 1 >= 0)
-                        {
-                            if (Game.boardTiles[xPos - 1, yPos - 1].tilePiece == null)
-                            {
-                                highlightedPossibleMoves.Add(new int[] { xPos - 1, yPos - 1 });
-                            }
-                            //Check if you can jump over a piece to your left, backwards
-                            else if (Game.boardTiles[xPos - 1, yPos - 1].tilePiece.player != Game.gamePlayer)
-                            {
-                                if (xPos - 2 >= 0 && yPos - 2 >= 0)
-                                {
-                                    if (Game.boardTiles[xPos - 2, yPos - 2].tilePiece == null)
-                                    {
-                                        highlightedPossibleMoves.Add(new int[] { xPos - 2, yPos - 2 });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    //Player 1 right diagonal
-                    if (xPos + 1 < Game.boardWidth && yPos + 1 < Game.boardHeight)
-                    {
-                        if (Game.boardTiles[xPos + 1, yPos + 1].tilePiece == null)
-                        {
-                            highlightedPossibleMoves.Add(new int[] { xPos + 1, yPos + 1 });
-                        }
-                        //Check if you can jump over a piece to your right
-                        else if (Game.boardTiles[xPos + 1, yPos + 1].tilePiece.player != Game.gamePlayer)
-                        {
-                            if (xPos + 2 < Game.boardWidth && yPos + 2 < Game.boardHeight)
-                            {
-                                if (Game.boardTiles[xPos + 2, yPos + 2].tilePiece == null)
-                                {
-                                    highlightedPossibleMoves.Add(new int[] { xPos + 2, yPos + 2 });
-                                }
-                            }
-                        }
-                    }
-                    //Player 1's right diagonal, backward, if piece is a King
-                    if (Game.boardTiles[xPos, yPos].tilePiece.pieceType == GamePiece.PieceType.KING)
-                    {
-                        if (xPos + 1 < Game.boardWidth && yPos - 1 >= 0)
-                        {
-                            if (Game.boardTiles[xPos + 1, yPos - 1].tilePiece == null)
-                            {
-                                highlightedPossibleMoves.Add(new int[] { xPos + 1, yPos - 1 });
-                            }
-                            //Check if you can jump over a piece to your right
-                            else if (Game.boardTiles[xPos + 1, yPos - 1].tilePiece.player != Game.gamePlayer)
-                            {
-                                if (xPos + 2 < Game.boardWidth && yPos - 2 >= 0)
-                                {
-                                    if (Game.boardTiles[xPos + 2, yPos - 2].tilePiece == null)
-                                    {
-                                        highlightedPossibleMoves.Add(new int[] { xPos + 2, yPos - 2 });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    break;
-                case GamePiece.Player.PLAYER2:
-                    //Player 2's left diagonal
-                    if (xPos + 1 < Game.boardWidth && yPos - 1 >= 0)
-                    {
-                        if (Game.boardTiles[xPos + 1, yPos - 1].tilePiece == null)
-                        {
-                            highlightedPossibleMoves.Add(new int[] { xPos + 1, yPos - 1 });
-                        }
-                        //Check if you can jump over a piece to your left
-                        else if (Game.boardTiles[xPos + 1, yPos - 1].tilePiece.player != Game.gamePlayer)
-                        {
-                            if (xPos + 2 < Game.boardWidth && yPos - 2 >= 0)
-                            {
-                                if (Game.boardTiles[xPos + 2, yPos - 2].tilePiece == null)
-                                {
-                                    highlightedPossibleMoves.Add(new int[] { xPos + 2, yPos - 2 });
-                                }
-                            }
-                        }
-                    }
-                    //Player 2's left diagonal, backwards, if piece is a King
-                    if (Game.boardTiles[xPos, yPos].tilePiece.pieceType == GamePiece.PieceType.KING)
-                    {
-                        if (xPos + 1 < Game.boardWidth && yPos + 1 < Game.boardHeight)
-                        {
-                            if (Game.boardTiles[xPos + 1, yPos + 1].tilePiece == null)
-                            {
-                                highlightedPossibleMoves.Add(new int[] { xPos + 1, yPos + 1 });
-                            }
-                            //Check if you can jump over a piece to your left
-                            else if (Game.boardTiles[xPos + 1, yPos + 1].tilePiece.player != Game.gamePlayer)
-                            {
-                                if (xPos + 2 < Game.boardWidth && yPos + 2 < Game.boardHeight)
-                                {
-                                    if (Game.boardTiles[xPos + 2, yPos + 2].tilePiece == null)
-                                    {
-                                        highlightedPossibleMoves.Add(new int[] { xPos + 2, yPos + 2 });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    //Player 2's right diagonal
-                    if (xPos - 1 >= 0 && yPos - 1 >= 0)
-                    {
-                        if (Game.boardTiles[xPos - 1, yPos - 1].tilePiece == null)
-                        {
-                            highlightedPossibleMoves.Add(new int[] { xPos - 1, yPos - 1 });
-                        }
-                        //Check if you can jump over a piece to your right
-                        else if (Game.boardTiles[xPos - 1, yPos - 1].tilePiece.player != Game.gamePlayer)
-                        {
-                            if (xPos - 2 >= 0 && yPos - 2 >= 0)
-                            {
-                                if (Game.boardTiles[xPos - 2, yPos - 2].tilePiece == null)
-                                {
-                                    highlightedPossibleMoves.Add(new int[] { xPos - 2, yPos - 2 });
-                                }
-                            }
-                        }
-                    }
-                    //Player 2's right diagonal, backwards, if piece is a King
-                    if(Game.boardTiles[xPos,yPos].tilePiece.pieceType == GamePiece.PieceType.KING)
-                    {
-                        if (xPos - 1 >= 0 && yPos + 1 < Game.boardHeight)
-                        {
-                            if (Game.boardTiles[xPos - 1, yPos + 1].tilePiece == null)
-                            {
-                                highlightedPossibleMoves.Add(new int[] { xPos - 1, yPos + 1 });
-                            }
-                            //Check if you can jump over a piece to your right
-                            else if (Game.boardTiles[xPos - 1, yPos + 1].tilePiece.player != Game.gamePlayer)
-                            {
-                                if (xPos - 2 >= 0 && yPos + 2 < Game.boardHeight)
-                                {
-                                    if (Game.boardTiles[xPos - 2, yPos + 2].tilePiece == null)
-                                    {
-                                        highlightedPossibleMoves.Add(new int[] { xPos - 2, yPos + 2 });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-            
-            foreach(int[] position in highlightedPossibleMoves)
-            {
-                boardTileGrids[position[0], position[1]].Opacity = PLAYABLE;
-            }
-        }
-
-        /// <summary>
         /// Unhighlights the selected piece and possible moves
         /// </summary>
         private void Grid_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -500,11 +317,11 @@ namespace SDPCheckers.Pages
             currentSelectedPiece.tileImage.Opacity = 1;
             currentSelectedPiece = null;
 
-            foreach(int[] position in highlightedPossibleMoves)
+            foreach(int[] position in possibleMoves)
             {
                 boardTileGrids[position[0], position[1]].Opacity = NOTPLAYABLE;
             }
-            highlightedPossibleMoves.Clear();
+            possibleMoves.Clear();
         }
     }
 }
