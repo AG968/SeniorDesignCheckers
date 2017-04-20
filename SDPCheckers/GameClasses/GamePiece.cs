@@ -18,7 +18,6 @@ namespace SDPCheckers.GameClasses
    
         public GamePiece(Player player)
         {
-            
             this.player = player;
         }
     }

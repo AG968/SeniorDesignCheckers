@@ -10,7 +10,10 @@ namespace SDPCheckers.GameClasses
     {
         public const int boardHeight = 8;
         public const int boardWidth = 4;
+
+        //Player that this user is
         public GamePiece.Player gamePlayer;
+
         //4x8 board.  boardTiles are referenced as if referencing a cartesian plain, with the bottom left tile of player1
         //being the origin. EG bottom left of player 1 is boardTiles[0,0], whereas 'bottom left' of Player 2 would be 
         //boardTiles[3,7]

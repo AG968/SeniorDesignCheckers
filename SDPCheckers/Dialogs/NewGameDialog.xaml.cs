@@ -22,7 +22,9 @@ namespace SDPCheckers.Dialogs
     /// </summary>
     public partial class NewGameDialog : CustomDialog
     {
+        //Used as a flag to determine whether or not the room name and room password UI textboxes should be checked after the dialog is closed
         public bool result { get; set; }
+
         public NewGameDialog()
         {
             InitializeComponent();
