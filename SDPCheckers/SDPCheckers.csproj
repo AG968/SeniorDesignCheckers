@@ -144,6 +144,12 @@
   <ItemGroup>
     <Resource Include="Images\Checkers_Piece_Red.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Checkers_Piece_Red_King.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Checkers_Piece_White_King.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
