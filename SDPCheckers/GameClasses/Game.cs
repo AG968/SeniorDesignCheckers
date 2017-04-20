@@ -29,7 +29,7 @@ namespace SDPCheckers.GameClasses
         {
         
             //Player 1 tiles
-            boardTiles[1, 0] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 1,0);
+            boardTiles[1, 0] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 1, 0);
             boardTiles[3, 0] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 3, 0);
             boardTiles[0, 1] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 0, 1); 
             boardTiles[2, 1] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 2, 1);
@@ -37,8 +37,6 @@ namespace SDPCheckers.GameClasses
             boardTiles[3, 2] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 3, 2);
 
             //Player 2 tiles
-            boardTiles[2, 3] = new GameTile(new GamePiece(GamePiece.Player.PLAYER2), 2, 3);
-
             boardTiles[0, 5] = new GameTile(new GamePiece(GamePiece.Player.PLAYER2), 0, 5);
             boardTiles[2, 5] = new GameTile(new GamePiece(GamePiece.Player.PLAYER2), 2, 5);
             boardTiles[1, 6] = new GameTile(new GamePiece(GamePiece.Player.PLAYER2), 1, 6);

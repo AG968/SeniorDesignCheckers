@@ -78,21 +78,48 @@ namespace SDPCheckers.Pages
 
                 GameTile oldTile = Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]];
 
-                //Move piece to new tile
-                Game.boardTiles[Convert.ToInt32(positionToMoveTo[0]), Convert.ToInt32( positionToMoveTo[1])] = oldTile;
 
-                //Remove piece from old tile
-                //Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]] = null;
+                movePiece(Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]],
+                    Game.boardTiles[Convert.ToInt32(positionToMoveTo[0]), Convert.ToInt32(positionToMoveTo[1])]);
+        
+                //Unhighlight the possible moves that had been highlighted
+                foreach(int[] position in highlightedPossibleMoves)
+                {
+                    boardTileGrids[position[0], position[1]].Opacity = NOTPLAYABLE;
+                }
+                //Update cursor hand to arrow
+                (App.Current.MainWindow).Cursor = Cursors.Arrow;
 
-                //Redraw piece
+                //Update player turn
+                Game.gamePlayer = Game.gamePlayer == GamePiece.Player.PLAYER1 ? GamePiece.Player.PLAYER2 : GamePiece.Player.PLAYER1;
 
-                Game.boardTiles[Convert.ToInt32(positionToMoveTo[0]),Convert.ToInt32(positionToMoveTo[1])].drawTileImage();
-
-                Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]].tilePiece = null;
-                Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]].drawTileImage(); 
-                //Game.boardTiles[Convert.ToInt32(position[0]), Convert.ToInt32(position[1])].
-                //(tileToMoveTo.Children as Image)
+                /*
+                    Update DB of move that was done here
+                */
             }
+        }
+
+        private void movePiece(GameTile sourceTile, GameTile destinationTile)
+        {
+            //If you moved more than one tile horizontally, that means you ate a piece, so we have to remove that eaten piece from the board
+            if(Math.Abs(destinationTile.position[0] - sourceTile.position[0]) > 1)
+            {
+                int xPosOfEnemyPiece = (destinationTile.position[0] + sourceTile.position[0]) / 2;
+                
+                int yPosOfEnemyPiece = (destinationTile.position[1] + sourceTile.position[1]) / 2;
+
+                //Kill enemy's piece and redraw that tile
+                GameTile enemyPieceTile = Game.boardTiles[xPosOfEnemyPiece, yPosOfEnemyPiece];
+                enemyPieceTile.tilePiece = null;
+                enemyPieceTile.drawTileImage();
+            }
+            //Update position of piece
+            destinationTile.tilePiece = sourceTile.tilePiece;
+            sourceTile.tilePiece = null;
+
+            //Update images
+            sourceTile.drawTileImage();
+            destinationTile.drawTileImage();
         }
 
         private void boardTileMouseEnter(object sender, EventArgs e)
@@ -241,7 +268,7 @@ namespace SDPCheckers.Pages
                         {
                             highlightedPossibleMoves.Add(new int[] { xPos + 1, yPos + 1 });
                         }
-                        //Check if you can jump over a piece to your left
+                        //Check if you can jump over a piece to your right
                         else if (Game.boardTiles[xPos + 1, yPos + 1].tilePiece.player != Game.gamePlayer)
                         {
                             if (xPos + 2 < Game.boardWidth && yPos + 2 < Game.boardHeight)
@@ -255,6 +282,44 @@ namespace SDPCheckers.Pages
                     }
                     break;
                 case GamePiece.Player.PLAYER2:
+                    //Player 2's left diagonal
+                    if (xPos + 1 < Game.boardWidth && yPos - 1 >= 0)
+                    {
+                        if (Game.boardTiles[xPos + 1, yPos - 1].tilePiece == null)
+                        {
+                            highlightedPossibleMoves.Add(new int[] { xPos + 1, yPos - 1 });
+                        }
+                        //Check if you can jump over a piece to your left
+                        else if (Game.boardTiles[xPos + 1, yPos - 1].tilePiece.player != Game.gamePlayer)
+                        {
+                            if (xPos + 2 < Game.boardWidth && yPos - 2 >= 0)
+                            {
+                                if (Game.boardTiles[xPos + 2, yPos - 2].tilePiece == null)
+                                {
+                                    highlightedPossibleMoves.Add(new int[] { xPos + 2, yPos - 2 });
+                                }
+                            }
+                        }
+                    }
+                    //Player 2's right diagonal
+                    if (xPos - 1 >= 0 && yPos - 1 >= 0)
+                    {
+                        if (Game.boardTiles[xPos - 1, yPos - 1].tilePiece == null)
+                        {
+                            highlightedPossibleMoves.Add(new int[] { xPos - 1, yPos - 1 });
+                        }
+                        //Check if you can jump over a piece to your right
+                        else if (Game.boardTiles[xPos - 1, yPos - 1].tilePiece.player != Game.gamePlayer)
+                        {
+                            if (xPos - 2 >= 0 && yPos - 2 >= 0)
+                            {
+                                if (Game.boardTiles[xPos - 2, yPos - 2].tilePiece == null)
+                                {
+                                    highlightedPossibleMoves.Add(new int[] { xPos - 2, yPos - 2 });
+                                }
+                            }
+                        }
+                    }
                     break;
                 default:
                     break;
