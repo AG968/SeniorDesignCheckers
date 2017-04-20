@@ -13,7 +13,7 @@ namespace SDPCheckers.GameClasses
         public int numberOfPlayers { get; set; }
 
         /// <summary>
-        /// The GameRoom is a medium to connect two players together via the database before initializing an actual GameBoard
+        /// The GameRoom is a medium to connect two players together via the database before initializing an actual Game
         /// </summary>
         /// <param name="roomName"></param>
         /// <param name="roomPassword"></param>

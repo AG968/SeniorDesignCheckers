@@ -9,12 +9,21 @@ using System.Windows.Media.Imaging;
 namespace SDPCheckers.Pages
 {
     /// <summary>
-    /// Interaction logic for GameBoard.xaml
+    /// Interaction logic for Game.xaml
     /// </summary>
-    public partial class GameBoard : UserControl
+    public partial class Game : UserControl
     {
-        //Will initialize state of all game board tiles once game is created
-        private Game Game = null;
+        private const int boardHeight = 8;
+        private const int boardWidth = 4;
+
+        //Player that this user is
+        public GamePiece.Player gamePlayer;
+
+        //4x8 board.  boardTiles are referenced as if referencing a cartesian plain, with the bottom left tile of player1
+        //being the origin. EG bottom left of player 1 is boardTiles[0,0], whereas 'bottom left' of Player 2 would be 
+        //boardTiles[3,7]
+        public GameTile[,] boardTiles = new GameTile[4, 8];
+
 
         //Keep track of the piece the user has selected to know which tiles should be highlighted and what moves can be done.
         private GameTile currentSelectedPiece = null;
@@ -30,10 +39,11 @@ namespace SDPCheckers.Pages
         private const double PLAYABLE = 0.5;
         private const double NOTPLAYABLE = 1;
 
-        public GameBoard(GamePiece.Player player)
+        public Game(GamePiece.Player player)
         {
-            Game = new Game(player);
-    
+            initializeBoard();
+            gamePlayer = player;
+
             InitializeComponent();
             initializeBoardTileImageSources();
             initializeTileIndexReferences();
@@ -42,6 +52,41 @@ namespace SDPCheckers.Pages
             //Rotate the board UI if you're player 2
             boardAngle.Angle = player == GamePiece.Player.PLAYER1 ? 0 : 180;
 
+        }
+
+        /// <summary>
+        /// Initializes the states for all game board tiles 
+        /// </summary>
+        private void initializeBoard()
+        {
+
+            //Player 1 tiles
+            boardTiles[1, 0] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 1, 0);
+            boardTiles[3, 0] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 3, 0);
+            boardTiles[0, 1] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 0, 1);
+            boardTiles[2, 1] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 2, 1);
+            boardTiles[1, 2] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 1, 2);
+            boardTiles[3, 2] = new GameTile(new GamePiece(GamePiece.Player.PLAYER1), 3, 2);
+
+            //Player 2 tiles
+            boardTiles[0, 5] = new GameTile(new GamePiece(GamePiece.Player.PLAYER2), 0, 5);
+            boardTiles[2, 5] = new GameTile(new GamePiece(GamePiece.Player.PLAYER2), 2, 5);
+            boardTiles[1, 6] = new GameTile(new GamePiece(GamePiece.Player.PLAYER2), 1, 6);
+            boardTiles[3, 6] = new GameTile(new GamePiece(GamePiece.Player.PLAYER2), 3, 6);
+            boardTiles[0, 7] = new GameTile(new GamePiece(GamePiece.Player.PLAYER2), 0, 7);
+            boardTiles[2, 7] = new GameTile(new GamePiece(GamePiece.Player.PLAYER2), 2, 7);
+
+            //Empty Tiles
+            for (int x = 0; x < boardWidth; ++x)
+            {
+                for (int y = 0; y < boardHeight; ++y)
+                {
+                    if (boardTiles[x, y] == null)
+                    {
+                        boardTiles[x, y] = new GameTile(null, x, y);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -67,9 +112,9 @@ namespace SDPCheckers.Pages
             boardTileGrids[0, 7] = G07;
             boardTileGrids[2, 7] = G27;
 
-            for(int x = 0; x < Game.boardWidth; ++x)
+            for(int x = 0; x < boardWidth; ++x)
             {
-                for(int y = 0; y < Game.boardHeight; ++y)
+                for(int y = 0; y < boardHeight; ++y)
                 {
                     //If the tile is not a playable tile, go to the next tile
                     if(boardTileGrids[x, y] == null) continue;
@@ -97,12 +142,12 @@ namespace SDPCheckers.Pages
                 string[] positionToMoveTo = (tileToMoveTo.Children[0] as Image).Uid.Split(',');
                 
                 //Move the piece from the current position to the selected position
-                movePiece(Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]],
-                    Game.boardTiles[Convert.ToInt32(positionToMoveTo[0]), Convert.ToInt32(positionToMoveTo[1])]);
+                movePiece(boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]],
+                    boardTiles[Convert.ToInt32(positionToMoveTo[0]), Convert.ToInt32(positionToMoveTo[1])]);
         
 
                 //Update player turn
-                Game.gamePlayer = Game.gamePlayer == GamePiece.Player.PLAYER1 ? GamePiece.Player.PLAYER2 : GamePiece.Player.PLAYER1;
+                gamePlayer = gamePlayer == GamePiece.Player.PLAYER1 ? GamePiece.Player.PLAYER2 : GamePiece.Player.PLAYER1;
 
                 /*
                     Update DB of move that was done here
@@ -118,7 +163,7 @@ namespace SDPCheckers.Pages
         private void movePiece(GameTile sourceTile, GameTile destinationTile)
         {
             //If player 1 just reached the opposite side of the board
-            if (destinationTile.position[1] == Game.boardHeight - 1 && sourceTile.tilePiece.player == GamePiece.Player.PLAYER1)
+            if (destinationTile.position[1] == boardHeight - 1 && sourceTile.tilePiece.player == GamePiece.Player.PLAYER1)
             {
                 sourceTile.tilePiece.pieceType = GamePiece.PieceType.KING;
             }
@@ -136,7 +181,7 @@ namespace SDPCheckers.Pages
                 int yPosOfEnemyPiece = (destinationTile.position[1] + sourceTile.position[1]) / 2;
 
                 //Kill enemy's piece and redraw that tile
-                GameTile enemyPieceTile = Game.boardTiles[xPosOfEnemyPiece, yPosOfEnemyPiece];
+                GameTile enemyPieceTile = boardTiles[xPosOfEnemyPiece, yPosOfEnemyPiece];
                 enemyPieceTile.tilePiece = null;
                 enemyPieceTile.drawTileImage();
             }
@@ -188,48 +233,48 @@ namespace SDPCheckers.Pages
 
 
         /// <summary>
-        /// Initializes the image objects that should be referenced by each Game.boardTile to be matched with its respective
-        /// GameBoard grid tile.
+        /// Initializes the image objects that should be referenced by each boardTile to be matched with its respective
+        /// Game grid tile.
         /// </summary>
         private void initializeBoardTileImageSources()
         {
             //Only initializing the tiles that are playable on checkers
-            Game.boardTiles[1, 0].tileImage = T10;
-            Game.boardTiles[3, 0].tileImage = T30;
+            boardTiles[1, 0].tileImage = T10;
+            boardTiles[3, 0].tileImage = T30;
 
-            Game.boardTiles[0, 1].tileImage = T01;
-            Game.boardTiles[2, 1].tileImage = T21;
+            boardTiles[0, 1].tileImage = T01;
+            boardTiles[2, 1].tileImage = T21;
 
-            Game.boardTiles[1, 2].tileImage = T12;
-            Game.boardTiles[3, 2].tileImage = T32;
+            boardTiles[1, 2].tileImage = T12;
+            boardTiles[3, 2].tileImage = T32;
 
-            Game.boardTiles[0, 3].tileImage = T03;
-            Game.boardTiles[2, 3].tileImage = T23;
+            boardTiles[0, 3].tileImage = T03;
+            boardTiles[2, 3].tileImage = T23;
 
-            Game.boardTiles[1, 4].tileImage = T14;
-            Game.boardTiles[3, 4].tileImage = T34;
+            boardTiles[1, 4].tileImage = T14;
+            boardTiles[3, 4].tileImage = T34;
 
-            Game.boardTiles[0, 5].tileImage = T05;
-            Game.boardTiles[2, 5].tileImage = T25;
+            boardTiles[0, 5].tileImage = T05;
+            boardTiles[2, 5].tileImage = T25;
 
-            Game.boardTiles[1, 6].tileImage = T16;
-            Game.boardTiles[3, 6].tileImage = T36;
+            boardTiles[1, 6].tileImage = T16;
+            boardTiles[3, 6].tileImage = T36;
 
-            Game.boardTiles[0, 7].tileImage = T07;
-            Game.boardTiles[2, 7].tileImage = T27;
+            boardTiles[0, 7].tileImage = T07;
+            boardTiles[2, 7].tileImage = T27;
         }
 
         /// <summary>
-        /// Attaches event handlers to each game board tile and draws them onto the gameboard.s
+        /// Attaches event handlers to each game board tile and draws them onto the Game.s
         /// </summary>
         private void drawGameBoardPieces()
         {
-            for(int x = 0; x < Game.boardWidth; ++x)
+            for(int x = 0; x < boardWidth; ++x)
             {
-                for(int y = 0; y< Game.boardHeight; ++y)
+                for(int y = 0; y< boardHeight; ++y)
                 {
-                    initializePieceEvents(Game.boardTiles[x, y]);
-                    Game.boardTiles[x, y].drawTileImage();
+                    initializePieceEvents(boardTiles[x, y]);
+                    boardTiles[x, y].drawTileImage();
                 }
             }
         }
@@ -276,7 +321,7 @@ namespace SDPCheckers.Pages
             if (currentSelectedPiece != null) currentSelectedPiece.tileImage.Opacity = 1;
 
             string[] tilePosition = (sender as Image).Uid.Split(',');
-            currentSelectedPiece = Game.boardTiles[Convert.ToInt32( tilePosition[0]),Convert.ToInt32( tilePosition[1])];
+            currentSelectedPiece = boardTiles[Convert.ToInt32( tilePosition[0]),Convert.ToInt32( tilePosition[1])];
             currentSelectedPiece.tileImage.Opacity = 0.5;
 
             //Clear previously highlighted tiles
@@ -286,7 +331,7 @@ namespace SDPCheckers.Pages
             }
             possibleMoves.Clear();
 
-           possibleMoves = currentSelectedPiece.getPossibleMoves(Game.boardTiles,Game.gamePlayer);
+           possibleMoves = currentSelectedPiece.getPossibleMoves(boardTiles, gamePlayer);
 
             //Highlight new possible moves
             foreach (int[] position in possibleMoves)
@@ -304,7 +349,7 @@ namespace SDPCheckers.Pages
             Image piece = sender as Image;
             string[] position = piece.Uid.Split(',');
 
-            return Game.boardTiles[Convert.ToInt32(position[0]), Convert.ToInt32(position[1])].tilePiece.player == Game.gamePlayer;
+            return boardTiles[Convert.ToInt32(position[0]), Convert.ToInt32(position[1])].tilePiece.player == gamePlayer;
             
         }
 
@@ -322,6 +367,16 @@ namespace SDPCheckers.Pages
                 boardTileGrids[position[0], position[1]].Opacity = NOTPLAYABLE;
             }
             possibleMoves.Clear();
+        }
+
+        public static int getBoardWidth()
+        {
+            return boardWidth;
+        }
+
+        public static int getBoardHeight()
+        {
+            return boardHeight;
         }
     }
 }

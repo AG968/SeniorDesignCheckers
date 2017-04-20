@@ -67,12 +67,11 @@
     <Compile Include="Dialogs\NewGameDialog.xaml.cs">
       <DependentUpon>NewGameDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="GameClasses\Game.cs" />
     <Compile Include="GameClasses\GamePiece.cs" />
     <Compile Include="GameClasses\GameRoom.cs" />
     <Compile Include="GameClasses\GameTile.cs" />
-    <Compile Include="Pages\GameBoard.xaml.cs">
-      <DependentUpon>GameBoard.xaml</DependentUpon>
+    <Compile Include="Pages\Game.xaml.cs">
+      <DependentUpon>Game.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\IntroductionPage.xaml.cs">
       <DependentUpon>IntroductionPage.xaml</DependentUpon>
@@ -94,7 +93,7 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="Pages\GameBoard.xaml">
+    <Page Include="Pages\Game.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
