@@ -117,8 +117,19 @@ namespace SDPCheckers.Pages
         /// </summary>
         private void movePiece(GameTile sourceTile, GameTile destinationTile)
         {
+            //If player 1 just reached the opposite side of the board
+            if (destinationTile.position[1] == Game.boardHeight - 1 && sourceTile.tilePiece.player == GamePiece.Player.PLAYER1)
+            {
+                sourceTile.tilePiece.pieceType = GamePiece.PieceType.KING;
+            }
+            //If player 2 just reached the opposite side of the board
+            else if (destinationTile.position[1] == 0 && sourceTile.tilePiece.player == GamePiece.Player.PLAYER2)
+            {
+                sourceTile.tilePiece.pieceType = GamePiece.PieceType.KING;
+            }
+
             //If you moved more than one tile horizontally, that means you ate a piece, so we have to remove that eaten piece from the board
-            if(Math.Abs(destinationTile.position[0] - sourceTile.position[0]) > 1)
+            if (Math.Abs(destinationTile.position[0] - sourceTile.position[0]) > 1)
             {
                 int xPosOfEnemyPiece = (destinationTile.position[0] + sourceTile.position[0]) / 2;
                 
@@ -303,7 +314,7 @@ namespace SDPCheckers.Pages
             switch (Game.gamePlayer)
             {
                 case GamePiece.Player.PLAYER1:
-                    //Player 1 left diagonal
+                    //Player 1 left diagonal, forward
                     if(xPos - 1 >= 0 && yPos + 1 < Game.boardHeight)
                     {
                         if(Game.boardTiles[xPos-1,yPos+1].tilePiece == null)
@@ -318,6 +329,28 @@ namespace SDPCheckers.Pages
                                 if(Game.boardTiles[xPos-2,yPos+2].tilePiece == null)
                                 {
                                     highlightedPossibleMoves.Add(new int[] { xPos - 2, yPos + 2 });
+                                }
+                            }
+                        }
+                    }
+                    //Player 1 left diagonal, backward, for when a piece is a king
+                    if (Game.boardTiles[xPos, yPos].tilePiece.pieceType == GamePiece.PieceType.KING)
+                    {
+                        if (xPos - 1 >= 0 && yPos - 1 >= 0)
+                        {
+                            if (Game.boardTiles[xPos - 1, yPos - 1].tilePiece == null)
+                            {
+                                highlightedPossibleMoves.Add(new int[] { xPos - 1, yPos - 1 });
+                            }
+                            //Check if you can jump over a piece to your left, backwards
+                            else if (Game.boardTiles[xPos - 1, yPos - 1].tilePiece.player != Game.gamePlayer)
+                            {
+                                if (xPos - 2 >= 0 && yPos - 2 >= 0)
+                                {
+                                    if (Game.boardTiles[xPos - 2, yPos - 2].tilePiece == null)
+                                    {
+                                        highlightedPossibleMoves.Add(new int[] { xPos - 2, yPos - 2 });
+                                    }
                                 }
                             }
                         }
@@ -337,6 +370,28 @@ namespace SDPCheckers.Pages
                                 if (Game.boardTiles[xPos + 2, yPos + 2].tilePiece == null)
                                 {
                                     highlightedPossibleMoves.Add(new int[] { xPos + 2, yPos + 2 });
+                                }
+                            }
+                        }
+                    }
+                    //Player 1's right diagonal, backward, if piece is a King
+                    if (Game.boardTiles[xPos, yPos].tilePiece.pieceType == GamePiece.PieceType.KING)
+                    {
+                        if (xPos + 1 < Game.boardWidth && yPos - 1 >= 0)
+                        {
+                            if (Game.boardTiles[xPos + 1, yPos - 1].tilePiece == null)
+                            {
+                                highlightedPossibleMoves.Add(new int[] { xPos + 1, yPos - 1 });
+                            }
+                            //Check if you can jump over a piece to your right
+                            else if (Game.boardTiles[xPos + 1, yPos - 1].tilePiece.player != Game.gamePlayer)
+                            {
+                                if (xPos + 2 < Game.boardWidth && yPos - 2 >= 0)
+                                {
+                                    if (Game.boardTiles[xPos + 2, yPos - 2].tilePiece == null)
+                                    {
+                                        highlightedPossibleMoves.Add(new int[] { xPos + 2, yPos - 2 });
+                                    }
                                 }
                             }
                         }
@@ -362,6 +417,28 @@ namespace SDPCheckers.Pages
                             }
                         }
                     }
+                    //Player 2's left diagonal, backwards, if piece is a King
+                    if (Game.boardTiles[xPos, yPos].tilePiece.pieceType == GamePiece.PieceType.KING)
+                    {
+                        if (xPos + 1 < Game.boardWidth && yPos + 1 < Game.boardHeight)
+                        {
+                            if (Game.boardTiles[xPos + 1, yPos + 1].tilePiece == null)
+                            {
+                                highlightedPossibleMoves.Add(new int[] { xPos + 1, yPos + 1 });
+                            }
+                            //Check if you can jump over a piece to your left
+                            else if (Game.boardTiles[xPos + 1, yPos + 1].tilePiece.player != Game.gamePlayer)
+                            {
+                                if (xPos + 2 < Game.boardWidth && yPos + 2 < Game.boardHeight)
+                                {
+                                    if (Game.boardTiles[xPos + 2, yPos + 2].tilePiece == null)
+                                    {
+                                        highlightedPossibleMoves.Add(new int[] { xPos + 2, yPos + 2 });
+                                    }
+                                }
+                            }
+                        }
+                    }
                     //Player 2's right diagonal
                     if (xPos - 1 >= 0 && yPos - 1 >= 0)
                     {
@@ -377,6 +454,28 @@ namespace SDPCheckers.Pages
                                 if (Game.boardTiles[xPos - 2, yPos - 2].tilePiece == null)
                                 {
                                     highlightedPossibleMoves.Add(new int[] { xPos - 2, yPos - 2 });
+                                }
+                            }
+                        }
+                    }
+                    //Player 2's right diagonal, backwards, if piece is a King
+                    if(Game.boardTiles[xPos,yPos].tilePiece.pieceType == GamePiece.PieceType.KING)
+                    {
+                        if (xPos - 1 >= 0 && yPos + 1 < Game.boardHeight)
+                        {
+                            if (Game.boardTiles[xPos - 1, yPos + 1].tilePiece == null)
+                            {
+                                highlightedPossibleMoves.Add(new int[] { xPos - 1, yPos + 1 });
+                            }
+                            //Check if you can jump over a piece to your right
+                            else if (Game.boardTiles[xPos - 1, yPos + 1].tilePiece.player != Game.gamePlayer)
+                            {
+                                if (xPos - 2 >= 0 && yPos + 2 < Game.boardHeight)
+                                {
+                                    if (Game.boardTiles[xPos - 2, yPos + 2].tilePiece == null)
+                                    {
+                                        highlightedPossibleMoves.Add(new int[] { xPos - 2, yPos + 2 });
+                                    }
                                 }
                             }
                         }

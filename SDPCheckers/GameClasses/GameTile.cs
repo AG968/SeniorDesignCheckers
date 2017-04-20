@@ -11,9 +11,10 @@ namespace SDPCheckers.GameClasses
 {
     public class GameTile
     {
-        private static BitmapImage PLAYER1PIECE = new BitmapImage(new Uri("pack://application:,,,/SDPCheckers;component/Images/Checkers_Piece_White.png", UriKind.Absolute));
-        private static BitmapImage PLAYER2PIECE = new BitmapImage(new Uri("pack://application:,,,/SDPCheckers;component/Images/Checkers_Piece_Red.png", UriKind.Absolute));
-
+        private static BitmapImage PLAYER1CHECKERPIECE = new BitmapImage(new Uri("pack://application:,,,/SDPCheckers;component/Images/Checkers_Piece_White.png", UriKind.Absolute));
+        private static BitmapImage PLAYER2CHECKERPIECE = new BitmapImage(new Uri("pack://application:,,,/SDPCheckers;component/Images/Checkers_Piece_Red.png", UriKind.Absolute));
+        private static BitmapImage PLAYER1KINGPIECE = new BitmapImage(new Uri("pack://application:,,,/SDPCheckers;component/Images/Checkers_Piece_White_King.png", UriKind.Absolute));
+        private static BitmapImage PLAYER2KINGPIECE = new BitmapImage(new Uri("pack://application:,,,/SDPCheckers;component/Images/Checkers_Piece_Red_King.png", UriKind.Absolute));
 
         public GamePiece tilePiece = null;
 
@@ -47,9 +48,17 @@ namespace SDPCheckers.GameClasses
                 tileImage.Source = null;
             }else
             {
-                tileImage.Source = tilePiece.player == GamePiece.Player.PLAYER1
-                            ? PLAYER1PIECE
-                            : PLAYER2PIECE;
+                if(tilePiece.player == GamePiece.Player.PLAYER1)
+                {
+                    tileImage.Source = tilePiece.pieceType == GamePiece.PieceType.CHECKER
+                        ? PLAYER1CHECKERPIECE
+                        : PLAYER1KINGPIECE;
+                }else
+                {
+                    tileImage.Source = tilePiece.pieceType == GamePiece.PieceType.CHECKER
+                        ? PLAYER2CHECKERPIECE
+                        : PLAYER2KINGPIECE;
+                }
             }
         }
     }
