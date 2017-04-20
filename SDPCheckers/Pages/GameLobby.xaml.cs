@@ -51,6 +51,10 @@ namespace SDPCheckers.Pages
 
         }
 
+        /// <summary>
+        /// Shows an input dialog box requesting a room name and optional room password, and creates a game if the user presses OK.  
+        /// Once the room is created, the DB is updated with the newly created room and waits for a player to join before creating a game.
+        /// </summary>
         private async void createGameClicked(object sender, RoutedEventArgs e)
         {
             NewGameDialog newGameDialog = new NewGameDialog();
@@ -81,6 +85,9 @@ namespace SDPCheckers.Pages
             }
         }
 
+        /// <summary>
+        /// Sends a request to DB to update the list of existing games.
+        /// </summary>
         private  void updateLobbyList()
         {
                 //Code to request list of games from DB goes here

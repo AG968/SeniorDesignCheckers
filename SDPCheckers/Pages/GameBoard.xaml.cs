@@ -13,12 +13,20 @@ namespace SDPCheckers.Pages
     /// </summary>
     public partial class GameBoard : UserControl
     {
+        //Will initialize state of all game board tiles once game is created
         private Game Game = null;
+
+        //Keep track of the piece the user has selected to know which tiles should be highlighted and what moves can be done.
         private GameTile currentSelectedPiece = null;
+
+        //Used to reference the grid columns/rows that need to be highlighted when a piece is clicked
         private Grid[,] boardTileGrids = new Grid[4, 8];
+
+        //Remember the tiles that were highlighted, so we know which to unhighlight when a move is made without having to loop through all the tiles
         private List<int[]> highlightedPossibleMoves = new List<int[]>();
 
-        //Constants to set the opacity of a tile 
+        //Constants to set the opacity of a tile.  The opacity of a tile is how a tile is 'highlighted', but it is also used
+        //to determine whether that specific tile is playable or not.
         private const double PLAYABLE = 0.5;
         private const double NOTPLAYABLE = 1;
 
@@ -36,6 +44,10 @@ namespace SDPCheckers.Pages
 
         }
 
+        /// <summary>
+        /// Sets the boardTileGrids array with the respective grid tile for each index.  Also attaches MouseEnter, MouseLeave, and
+        /// MouseLeftButtonDown event handlers for each playable grid tile
+        /// </summary>
         private void initializeTileIndexReferences()
         {
             boardTileGrids[1, 0] = G10;
@@ -59,7 +71,10 @@ namespace SDPCheckers.Pages
             {
                 for(int y = 0; y < Game.boardHeight; ++y)
                 {
+                    //If the tile is not a playable tile, go to the next tile
                     if(boardTileGrids[x, y] == null) continue;
+
+                    //Attach event handlers to each playable grid tile
                     boardTileGrids[x, y].MouseEnter += boardTileMouseEnter;
                     boardTileGrids[x, y].MouseLeave += boardTileMouseExit;
                     boardTileGrids[x, y].MouseLeftButtonDown += boardTileMouseClick;
@@ -67,28 +82,24 @@ namespace SDPCheckers.Pages
             }
         }
 
+        /// <summary>
+        /// This event is fired after a player selects a piece and clicks on the tile they want to move to.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void boardTileMouseClick(object sender, EventArgs e)
         {
             Grid tileToMoveTo = (sender as Grid);
             if(tileToMoveTo.Opacity == PLAYABLE && currentSelectedPiece != null)
             {
-                ///////////////
-                Image tileToMoveTo2 = (tileToMoveTo.Children[0] as Image);
-                string[] positionToMoveTo = tileToMoveTo2.Uid.Split(',');
-
-                GameTile oldTile = Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]];
-
-
+                //Each grid tile will only ever have one child, which is the image of the piece, so indexing the  0th child of the grid
+                //will get the appropriate tile
+                string[] positionToMoveTo = (tileToMoveTo.Children[0] as Image).Uid.Split(',');
+                
+                //Move the piece from the current position to the selected position
                 movePiece(Game.boardTiles[currentSelectedPiece.position[0], currentSelectedPiece.position[1]],
                     Game.boardTiles[Convert.ToInt32(positionToMoveTo[0]), Convert.ToInt32(positionToMoveTo[1])]);
         
-                //Unhighlight the possible moves that had been highlighted
-                foreach(int[] position in highlightedPossibleMoves)
-                {
-                    boardTileGrids[position[0], position[1]].Opacity = NOTPLAYABLE;
-                }
-                //Update cursor hand to arrow
-                (App.Current.MainWindow).Cursor = Cursors.Arrow;
 
                 //Update player turn
                 Game.gamePlayer = Game.gamePlayer == GamePiece.Player.PLAYER1 ? GamePiece.Player.PLAYER2 : GamePiece.Player.PLAYER1;
@@ -99,6 +110,11 @@ namespace SDPCheckers.Pages
             }
         }
 
+        /// <summary>
+        /// Handles the UI updating associated with moving a piece.  That is, if you're doing a regular move, it draws the piece in the new
+        /// position.  If you're eating a piece, it removes the piece that was killed from the board and updates the position of the piece
+        /// that ate it.
+        /// </summary>
         private void movePiece(GameTile sourceTile, GameTile destinationTile)
         {
             //If you moved more than one tile horizontally, that means you ate a piece, so we have to remove that eaten piece from the board
@@ -113,15 +129,31 @@ namespace SDPCheckers.Pages
                 enemyPieceTile.tilePiece = null;
                 enemyPieceTile.drawTileImage();
             }
-            //Update position of piece
+            //Update position of piece that moved
             destinationTile.tilePiece = sourceTile.tilePiece;
             sourceTile.tilePiece = null;
 
-            //Update images
+            //Update images of piece that moved
             sourceTile.drawTileImage();
             destinationTile.drawTileImage();
+
+            //Unhighlight the possible moves that had been highlighted
+            foreach (int[] position in highlightedPossibleMoves)
+            {
+                boardTileGrids[position[0], position[1]].Opacity = NOTPLAYABLE;
+            }
+            highlightedPossibleMoves.Clear();
+
+            //Update cursor hand to arrow
+            (App.Current.MainWindow).Cursor = Cursors.Arrow;
+
         }
 
+        /// <summary>
+        /// If the sender was a playable tile, the cursor is updated to a hand.
+        /// </summary>
+        /// <param name="sender">  A Grid tile on the game board</param>
+        /// <param name="e"></param>
         private void boardTileMouseEnter(object sender, EventArgs e)
         {
             if((sender as Grid).Opacity == PLAYABLE)
@@ -130,6 +162,11 @@ namespace SDPCheckers.Pages
             }
         }
 
+        /// <summary>
+        /// IF the sender was a playable tile, the cursor is updated back to an arrow.
+        /// </summary>
+        /// <param name="sender"> A Grid tile on the game board</param>
+        /// <param name="e"></param>
         private void boardTileMouseExit(object sender, EventArgs e)
         {
             if ((sender as Grid).Opacity == PLAYABLE)
@@ -139,7 +176,10 @@ namespace SDPCheckers.Pages
         }
 
 
-
+        /// <summary>
+        /// Initializes the image objects that should be referenced by each Game.boardTile to be matched with its respective
+        /// GameBoard grid tile.
+        /// </summary>
         private void initializeBoardTileImageSources()
         {
             //Only initializing the tiles that are playable on checkers
@@ -166,9 +206,11 @@ namespace SDPCheckers.Pages
 
             Game.boardTiles[0, 7].tileImage = T07;
             Game.boardTiles[2, 7].tileImage = T27;
-
         }
 
+        /// <summary>
+        /// Attaches event handlers to each game board tile and draws them onto the gameboard.s
+        /// </summary>
         private void drawGameBoardPieces()
         {
             for(int x = 0; x < Game.boardWidth; ++x)
@@ -181,6 +223,10 @@ namespace SDPCheckers.Pages
             }
         }
 
+        /// <summary>
+        /// Attaches a MouseEnter, MouseLeave, and MouseLeftButtonDown event handler for the GameTile image (the piece).
+        /// </summary>
+        /// <param name="tile"></param>
         public void initializePieceEvents(GameTile tile)
         {
             if (tile.tileImage == null) return;
@@ -189,6 +235,9 @@ namespace SDPCheckers.Pages
             tile.tileImage.MouseLeftButtonDown += initializeMouseLeftClickPieceEvent;
         }
 
+        /// <summary>
+        /// If the sender is your piece, change the cursor to a hand
+        /// </summary>
         private void initializeMouseEnterPieceEvent(object sender, EventArgs e)
         {
             if (isMyPiece(sender))
@@ -197,6 +246,7 @@ namespace SDPCheckers.Pages
             }
         }
 
+        //If the sender was your piece, change the cursor back to an arrow
         private void initializeMouseLeavePieceEvent(object sender, EventArgs e)
         {
             if (isMyPiece(sender))
@@ -205,6 +255,8 @@ namespace SDPCheckers.Pages
             }
         }
 
+        //If the sender was your piece, unhighlight the last selected piece and highlight the newly selected piece, then highlight the possible
+        //moves that can be made by the newly selected piece.
         private void initializeMouseLeftClickPieceEvent(object sender, EventArgs e)
         {
             //Check if piece is your piece
@@ -224,9 +276,12 @@ namespace SDPCheckers.Pages
             highlightedPossibleMoves.Clear();
             
            highlightPossibleMoves(currentSelectedPiece.position[0], currentSelectedPiece.position[1]);
-           var x = ((((sender as Image).Parent as Grid).Parent) as Border);
         }
 
+
+        /// <summary>
+        /// Returns true if the sender was your piece, false otherwise
+        /// </summary>]
         private bool isMyPiece(object sender)
         {
             Image piece = sender as Image;
@@ -236,6 +291,12 @@ namespace SDPCheckers.Pages
             
         }
 
+        /// <summary>
+        /// Takes in the position of the piece that is selected.  Based on the player that the piece belongs to, it determines the
+        /// possible moves that can be made by the specified piece.
+        /// </summary>
+        /// <param name="xPos">x position of piece selected</param>
+        /// <param name="yPos">y position of piece selected</param>
         private void highlightPossibleMoves(int xPos, int yPos)
         {
             //Player 1's and Player 2's left and right possible diagonals are different
@@ -329,14 +390,22 @@ namespace SDPCheckers.Pages
             {
                 boardTileGrids[position[0], position[1]].Opacity = PLAYABLE;
             }
-            //boardTileGrids[3, 4].Opacity = 0.5;
         }
 
+        /// <summary>
+        /// Unhighlights the selected piece and possible moves
+        /// </summary>
         private void Grid_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (currentSelectedPiece == null) return;
             currentSelectedPiece.tileImage.Opacity = 1;
             currentSelectedPiece = null;
+
+            foreach(int[] position in highlightedPossibleMoves)
+            {
+                boardTileGrids[position[0], position[1]].Opacity = NOTPLAYABLE;
+            }
+            highlightedPossibleMoves.Clear();
         }
     }
 }

@@ -12,6 +12,11 @@ namespace SDPCheckers.GameClasses
         public string roomPassword { get; set; }
         public int numberOfPlayers { get; set; }
 
+        /// <summary>
+        /// The GameRoom is a medium to connect two players together via the database before initializing an actual GameBoard
+        /// </summary>
+        /// <param name="roomName"></param>
+        /// <param name="roomPassword"></param>
         public GameRoom(string  roomName, string roomPassword)
         {
             this.roomName = roomName;
