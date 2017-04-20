@@ -1,4 +1,5 @@
 ﻿using MahApps.Metro.Controls;
+using SDPCheckers.GameClasses;
 using SDPCheckers.Pages;
 using System.Windows;
 
@@ -14,7 +15,7 @@ namespace SDPCheckers
         public MainWindow()
         {
             InitializeComponent();
-            this.currentPage.Content = new GameBoard();
+            this.currentPage.Content = new GameBoard(GamePiece.Player.PLAYER1);
         }
     }
 }
