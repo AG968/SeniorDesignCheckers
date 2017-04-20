@@ -41,16 +41,12 @@ namespace SDPCheckers.Pages
 
         public Game(GamePiece.Player player)
         {
-            initializeBoard();
+            InitializeComponent();
             gamePlayer = player;
 
-            InitializeComponent();
-            initializeBoardTileImageSources();
-            initializeTileIndexReferences();
-            drawGameBoardPieces();
+            //Initialize the board after the component and player have been initialized
+            initializeBoard();
 
-            //Rotate the board UI if you're player 2
-            boardAngle.Angle = player == GamePiece.Player.PLAYER1 ? 0 : 180;
 
         }
 
@@ -87,6 +83,14 @@ namespace SDPCheckers.Pages
                     }
                 }
             }
+
+            initializeBoardTileImageSources();
+            initializeTileIndexReferences();
+            drawGameBoardPieces();
+
+
+            //Rotate the board UI if you're player 2
+            boardAngle.Angle = gamePlayer == GamePiece.Player.PLAYER1 ? 0 : 180;
         }
 
         /// <summary>
