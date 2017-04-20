@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SDPCheckers.Pages;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -75,7 +76,7 @@ namespace SDPCheckers.GameClasses
             {
                 case GamePiece.Player.PLAYER1:
                     //Player 1 left diagonal, forward
-                    if (position[XPOS] - 1 >= 0 && position[YPOS] + 1 < Game.boardHeight)
+                    if (position[XPOS] - 1 >= 0 && position[YPOS] + 1 < Game.getBoardHeight())
                     {
                         if (boardTiles[position[XPOS] - 1, position[YPOS] + 1].tilePiece == null)
                         {
@@ -84,7 +85,7 @@ namespace SDPCheckers.GameClasses
                         //Check if you can jump over a piece to your left
                         else if (boardTiles[position[XPOS] - 1, position[YPOS] + 1].tilePiece.player != gamePlayer)
                         {
-                            if (position[XPOS] - 2 >= 0 && position[YPOS] + 2 < Game.boardHeight)
+                            if (position[XPOS] - 2 >= 0 && position[YPOS] + 2 < Game.getBoardHeight())
                             {
                                 if (boardTiles[position[XPOS] - 2, position[YPOS] + 2].tilePiece == null)
                                 {
@@ -116,7 +117,7 @@ namespace SDPCheckers.GameClasses
                         }
                     }
                     //Player 1 right diagonal
-                    if (position[XPOS] + 1 < Game.boardWidth && position[YPOS] + 1 < Game.boardHeight)
+                    if (position[XPOS] + 1 < Game.getBoardWidth() && position[YPOS] + 1 < Game.getBoardHeight())
                     {
                         if (boardTiles[position[XPOS] + 1, position[YPOS] + 1].tilePiece == null)
                         {
@@ -125,7 +126,7 @@ namespace SDPCheckers.GameClasses
                         //Check if you can jump over a piece to your right
                         else if (boardTiles[position[XPOS] + 1, position[YPOS] + 1].tilePiece.player != gamePlayer)
                         {
-                            if (position[XPOS] + 2 < Game.boardWidth && position[YPOS] + 2 < Game.boardHeight)
+                            if (position[XPOS] + 2 < Game.getBoardWidth() && position[YPOS] + 2 < Game.getBoardHeight())
                             {
                                 if (boardTiles[position[XPOS] + 2, position[YPOS] + 2].tilePiece == null)
                                 {
@@ -137,7 +138,7 @@ namespace SDPCheckers.GameClasses
                     //Player 1's right diagonal, backward, if piece is a King
                     if (boardTiles[position[XPOS], position[YPOS]].tilePiece.pieceType == GamePiece.PieceType.KING)
                     {
-                        if (position[XPOS] + 1 < Game.boardWidth && position[YPOS] - 1 >= 0)
+                        if (position[XPOS] + 1 < Game.getBoardWidth() && position[YPOS] - 1 >= 0)
                         {
                             if (boardTiles[position[XPOS] + 1, position[YPOS] - 1].tilePiece == null)
                             {
@@ -146,7 +147,7 @@ namespace SDPCheckers.GameClasses
                             //Check if you can jump over a piece to your right
                             else if (boardTiles[position[XPOS] + 1, position[YPOS] - 1].tilePiece.player != gamePlayer)
                             {
-                                if (position[XPOS] + 2 < Game.boardWidth && position[YPOS] - 2 >= 0)
+                                if (position[XPOS] + 2 < Game.getBoardWidth() && position[YPOS] - 2 >= 0)
                                 {
                                     if (boardTiles[position[XPOS] + 2, position[YPOS] - 2].tilePiece == null)
                                     {
@@ -159,7 +160,7 @@ namespace SDPCheckers.GameClasses
                     break;
                 case GamePiece.Player.PLAYER2:
                     //Player 2's left diagonal
-                    if (position[XPOS] + 1 < Game.boardWidth && position[YPOS] - 1 >= 0)
+                    if (position[XPOS] + 1 < Game.getBoardWidth() && position[YPOS] - 1 >= 0)
                     {
                         if (boardTiles[position[XPOS] + 1, position[YPOS] - 1].tilePiece == null)
                         {
@@ -168,7 +169,7 @@ namespace SDPCheckers.GameClasses
                         //Check if you can jump over a piece to your left
                         else if (boardTiles[position[XPOS] + 1, position[YPOS] - 1].tilePiece.player != gamePlayer)
                         {
-                            if (position[XPOS] + 2 < Game.boardWidth && position[YPOS] - 2 >= 0)
+                            if (position[XPOS] + 2 < Game.getBoardWidth() && position[YPOS] - 2 >= 0)
                             {
                                 if (boardTiles[position[XPOS] + 2, position[YPOS] - 2].tilePiece == null)
                                 {
@@ -180,7 +181,7 @@ namespace SDPCheckers.GameClasses
                     //Player 2's left diagonal, backwards, if piece is a King
                     if (boardTiles[position[XPOS], position[YPOS]].tilePiece.pieceType == GamePiece.PieceType.KING)
                     {
-                        if (position[XPOS] + 1 < Game.boardWidth && position[YPOS] + 1 < Game.boardHeight)
+                        if (position[XPOS] + 1 < Game.getBoardWidth() && position[YPOS] + 1 < Game.getBoardHeight())
                         {
                             if (boardTiles[position[XPOS] + 1, position[YPOS] + 1].tilePiece == null)
                             {
@@ -189,7 +190,7 @@ namespace SDPCheckers.GameClasses
                             //Check if you can jump over a piece to your left
                             else if (boardTiles[position[XPOS] + 1, position[YPOS] + 1].tilePiece.player != gamePlayer)
                             {
-                                if (position[XPOS] + 2 < Game.boardWidth && position[YPOS] + 2 < Game.boardHeight)
+                                if (position[XPOS] + 2 < Game.getBoardWidth() && position[YPOS] + 2 < Game.getBoardHeight())
                                 {
                                     if (boardTiles[position[XPOS] + 2, position[YPOS] + 2].tilePiece == null)
                                     {
@@ -221,7 +222,7 @@ namespace SDPCheckers.GameClasses
                     //Player 2's right diagonal, backwards, if piece is a King
                     if (boardTiles[position[XPOS], position[YPOS]].tilePiece.pieceType == GamePiece.PieceType.KING)
                     {
-                        if (position[XPOS] - 1 >= 0 && position[YPOS] + 1 < Game.boardHeight)
+                        if (position[XPOS] - 1 >= 0 && position[YPOS] + 1 < Game.getBoardHeight())
                         {
                             if (boardTiles[position[XPOS] - 1, position[YPOS] + 1].tilePiece == null)
                             {
@@ -230,7 +231,7 @@ namespace SDPCheckers.GameClasses
                             //Check if you can jump over a piece to your right
                             else if (boardTiles[position[XPOS] - 1, position[YPOS] + 1].tilePiece.player != gamePlayer)
                             {
-                                if (position[XPOS] - 2 >= 0 && position[YPOS] + 2 < Game.boardHeight)
+                                if (position[XPOS] - 2 >= 0 && position[YPOS] + 2 < Game.getBoardHeight())
                                 {
                                     if (boardTiles[position[XPOS] - 2, position[YPOS] + 2].tilePiece == null)
                                     {
