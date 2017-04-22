@@ -62,26 +62,29 @@ namespace SDPCheckers.Pages
             if (newGameDialog.result)
             {
                 GameRoom gameToCreate = new GameRoom(newGameDialog.roomNameInput.Text, newGameDialog.roomPasswordInput.Text);
-                var controller = await (App.Current.MainWindow as MetroWindow).ShowProgressAsync("Waiting for opponent...", "Waiting for an opponent to join...", isCancelable: true);
-                controller.SetIndeterminate();
+                //var controller = await (App.Current.MainWindow as MetroWindow).ShowProgressAsync("Waiting for opponent...", "Waiting for an opponent to join...", isCancelable: true);
+                //controller.SetIndeterminate();
+                
+                PageTransitionHelper.transitionToPage(new Game(GamePiece.Player.PLAYER1));
+                
+      
+                ////Wait for opponent on a background thread to not block the UI thread while waiting
+                //await Task.Run(() =>
+                //{
+                //    while (!controller.IsCanceled)
+                //    {
+                //        /*
+                //         * Send created game to DB
+                //         * Check if player has joined...
+                //         */
+                //    }
+                //});
 
-                //Wait for opponent on a background thread to not block the UI thread while waiting
-                await Task.Run(() =>
-                {
-                    while (!controller.IsCanceled)
-                    {
-                        /*
-                         * Send created game to DB
-                         * Check if player has joined...
-                         */
-                    }
-                });
-
-                //Cancel clicked
-                /*
-                 * Code to remove created game from DB here
-                 */
-                await controller.CloseAsync();
+                ////Cancel clicked
+                ///*
+                // * Code to remove created game from DB here
+                // */
+                //await controller.CloseAsync();
             }
         }
 
