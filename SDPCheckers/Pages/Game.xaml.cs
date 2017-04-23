@@ -36,6 +36,7 @@ namespace SDPCheckers.Pages
         //boardTiles[3,7]
         public GameTile[,] boardTiles = new GameTile[4, 8];
 
+        private bool opponentsMoveWasUpdated = false;
 
         //Keep track of the piece the user has selected to know which tiles should be highlighted and what moves can be done.
         private GameTile currentSelectedPiece = null;
@@ -58,6 +59,10 @@ namespace SDPCheckers.Pages
         {
             InitializeComponent();
             gamePlayer = player;
+            if(gamePlayer == GamePiece.Player.PLAYER1)
+            {
+                waitingForPlayer(false);
+            }
             this.gameID = gameID;
             
             //Initialize the board after the component and player have been initialized
@@ -85,21 +90,39 @@ namespace SDPCheckers.Pages
 
         private void destroyGameTimer()
         {
+            if (gameTimer == null) return;
             gameTimer.Stop();
             gameTimer.Tick -= updateGame;
             gameTimer = null;
         }
 
-        public void updateGame(object sender, EventArgs e)
+        public async void updateGame(object sender, EventArgs e)
         {
             if (!gameIsDone)
             {
+                //If it's not your turn, check to see if the opponent has went, and update the board/game player if they have
                 if (currentPlayerTurn != gamePlayer)
                 {
-                    //do a get from the db to check if its your turn yet and do whatever necessary if it is
-                }else
-                {
-                    waitingForPlayer(false);
+                    string gameStatusString = await DatabaseGameHelper.checkGameStatus(gameID.ToString());
+                    GameStatus gameStatus = JsonConvert.DeserializeObject<GameStatus>(gameStatusString);
+                    if(gameStatus.status == 1)
+                    {
+                        //If it became your turn
+                        GamePiece.Player statusPlayerTurn = gameStatus.currentPlayerTurn == 0 ? GamePiece.Player.PLAYER1 : GamePiece.Player.PLAYER2;
+                        if(statusPlayerTurn == gamePlayer)
+                        {
+                            currentPlayerTurn = gamePlayer;
+                            movePiece(boardTiles[gameStatus.sourceCol, gameStatus.sourceRow], boardTiles[gameStatus.destCol, gameStatus.destRow]);
+                            waitingForPlayer(false);
+                        }
+
+                    }else
+                    {
+                        //Game connection has been lost
+                        destroyGameTimer();
+                        await (App.Current.MainWindow as MetroWindow).ShowMessageAsync("Your opponent has left the game", "It appears that your opponent has left the match.");
+                        PageTransitionHelper.transitionToPage(new GameLobby());
+                    }
                 }
             }
         }
@@ -229,6 +252,7 @@ namespace SDPCheckers.Pages
         private void waitingForPlayer(bool isOtherPlayersTurn)
         {
             waitingForOtherPlayer.Visibility = isOtherPlayersTurn ? Visibility.Visible : Visibility.Hidden;
+            waitingForPlayerText.Visibility = isOtherPlayersTurn ? Visibility.Visible : Visibility.Hidden;
         }
 
         /// <summary>
@@ -374,6 +398,7 @@ namespace SDPCheckers.Pages
         /// </summary>
         private void initializeMouseEnterPieceEvent(object sender, EventArgs e)
         {
+            if (currentPlayerTurn != gamePlayer) return;
             if (isMyPiece(sender))
             {
                 (App.Current.MainWindow).Cursor = Cursors.Hand;
@@ -383,6 +408,7 @@ namespace SDPCheckers.Pages
         //If the sender was your piece, change the cursor back to an arrow
         private void initializeMouseLeavePieceEvent(object sender, EventArgs e)
         {
+            if (currentPlayerTurn != gamePlayer) return;
             if (isMyPiece(sender))
             {
                 (App.Current.MainWindow).Cursor = Cursors.Arrow;

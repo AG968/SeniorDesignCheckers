@@ -127,7 +127,9 @@ namespace SDPCheckers.Pages
                 return;
             }else
             {
-                //
+                Game newGame = new Game(GamePiece.Player.PLAYER2, Convert.ToInt32(gameRoom.gameID));
+                newGame.numOfPlayers = 2;
+                PageTransitionHelper.transitionToPage(newGame);
             }
         }
     }

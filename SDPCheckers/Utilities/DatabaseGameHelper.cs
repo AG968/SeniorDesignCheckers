@@ -108,14 +108,12 @@ namespace SDPCheckers.Utilities
         public static async Task<string> checkGameStatus(string gameID)
         {
             string address = string.Format(
-        "http://abugharbieh.com/test/GameStatus.php?gameID={0}",
-        Uri.EscapeDataString(gameID));
+                "http://abugharbieh.com/test/GameStatus.php?gameID={0}",
+                 Uri.EscapeDataString(gameID));
 
             using (var client = new HttpClient())
             {
-
-                var x = await client.GetStringAsync(address);
-                return x;
+                return await client.GetStringAsync(address);
             }
         }
     }

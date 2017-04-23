@@ -27,7 +27,6 @@
                 <Button Content="Refresh Lobby" Click="refreshLobbyClicked" Height="40" Margin="10"></Button>
                 <Controls:ProgressRing x:Name="searchingProgressRing" Visibility="Hidden" IsActive="False"/>
             </StackPanel>
-
             <DataGrid x:Name="GameList" MouseDoubleClick="GameList_MouseDoubleClick" Grid.Column="1" Margin="5,10" BorderThickness="1" IsReadOnly="True"></DataGrid>
         </Grid>
 

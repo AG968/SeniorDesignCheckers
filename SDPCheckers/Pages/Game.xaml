@@ -12,11 +12,10 @@
              >
 
     <Grid MouseRightButtonDown="Grid_MouseRightButtonDown">
-        <Button HorizontalAlignment="Left" VerticalAlignment="Center" Width="80" Content="Quit" Click="Button_Click"></Button>
-        <Button HorizontalAlignment="Left" VerticalAlignment="Center" Width="80" Margin="0,60,0,0" Content="Test Get" Click="Button_Click_1"/>
+        <Button HorizontalAlignment="Left" VerticalAlignment="Center" Width="80" Content="Quit" Click="quitGameClick"></Button>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right">
         <Controls:ProgressRing x:Name="waitingForOtherPlayer"/>
-            <TextBlock Text="Waiting for other player's move..." TextWrapping="Wrap" Width="70"></TextBlock>
+            <TextBlock x:Name="waitingForPlayerText" Text="Waiting for other player's move..." TextWrapping="Wrap" Width="70"></TextBlock>
         </StackPanel>
         <Viewbox>
             
