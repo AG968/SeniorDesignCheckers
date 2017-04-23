@@ -8,22 +8,35 @@ namespace SDPCheckers.GameClasses
 {
     class GameRoom
     {
-        public string roomName { get; set; }
-        public string roomPassword { get; set; }
-        public int numberOfPlayers { get; set; }
+        private int _gameID;
+        public string gameID {
+            get
+            {
+                return _gameID.ToString();
+            }
+            set
+            {
+                _gameID = Convert.ToInt32(value);
+            }
+        }
+        private int _numOfPlayers;
+        public string numOfPlayers {
+            get
+            {
+                return _numOfPlayers.ToString();
+            }
+            set
+            {
+                _numOfPlayers = Convert.ToInt32(value);
+            }
+        }
 
         /// <summary>
-        /// The GameRoom is a medium to connect two players together via the database before initializing an actual Game
+        /// The GameRoom will be what is returned by the database to show the list of games currently available to join
         /// </summary>
-        /// <param name="roomName"></param>
-        /// <param name="roomPassword"></param>
-        public GameRoom(string  roomName, string roomPassword)
+        public GameRoom()
         {
-            this.roomName = roomName;
-            this.roomPassword = roomPassword;
-
-            //initialize number of players to 1 to account for the host of the game
-            numberOfPlayers = 1;
+            
         }
     }
 }

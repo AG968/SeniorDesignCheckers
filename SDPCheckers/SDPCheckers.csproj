@@ -81,6 +81,7 @@
     <Compile Include="Pages\IntroductionPage.xaml.cs">
       <DependentUpon>IntroductionPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Utilities\DatabaseGameHelper.cs" />
     <Compile Include="Utilities\PageTransitionHelper.cs" />
     <Page Include="Dialogs\NewGameDialog.xaml">
       <SubType>Designer</SubType>

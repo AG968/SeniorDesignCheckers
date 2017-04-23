@@ -2,6 +2,7 @@
 using MahApps.Metro.Controls.Dialogs;
 using Newtonsoft.Json;
 using SDPCheckers.GameClasses;
+using SDPCheckers.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -23,7 +24,7 @@ namespace SDPCheckers.Pages
         private const int boardHeight = 8;
         private const int boardWidth = 4;
 
-        private int numOfPlayers = 1;
+        public int numOfPlayers = 1;
         private int gameID=1;
         public bool gameIsDone = false;
         public GamePiece.Player currentPlayerTurn = GamePiece.Player.PLAYER1;
@@ -53,11 +54,11 @@ namespace SDPCheckers.Pages
 
         private DispatcherTimer gameTimer = new DispatcherTimer();
 
-        public Game(GamePiece.Player player)
+        public Game(GamePiece.Player player, int gameID)
         {
             InitializeComponent();
             gamePlayer = player;
-
+            this.gameID = gameID;
             
             //Initialize the board after the component and player have been initialized
             initializeBoard();
@@ -69,9 +70,10 @@ namespace SDPCheckers.Pages
             initializeGameTimer();
         }
 
-        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        private async void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
             destroyGameTimer();
+            await DatabaseGameHelper.deleteGame(gameID);
         }
 
         private void initializeGameTimer()
@@ -199,7 +201,7 @@ namespace SDPCheckers.Pages
                 string[] positionToMoveTo = (tileToMoveTo.Children[0] as Image).Uid.Split(',');
 
 
-                string gameStatusString = await endMove(currentSelectedPiece.position[0], currentSelectedPiece.position[1], Convert.ToInt32(positionToMoveTo[0]), Convert.ToInt32(positionToMoveTo[1]));
+                string gameStatusString = await DatabaseGameHelper.sendMove(gameID, numOfPlayers, currentPlayerTurn, currentSelectedPiece.position[0], currentSelectedPiece.position[1], Convert.ToInt32(positionToMoveTo[0]), Convert.ToInt32(positionToMoveTo[1]));
                 GameStatus gameStatus = JsonConvert.DeserializeObject<GameStatus>(gameStatusString);
                 if(gameStatus.status != 1)
                 {
@@ -456,46 +458,16 @@ namespace SDPCheckers.Pages
             return boardHeight;
         }
 
-        private async Task<string> endMove(int sourceCol, int sourceRow, int destCol, int destRow)
-        {
-            //Database uses 0 for player 1, and 1 for player 2, so if it's player 1's turn, the next value for the next player should be updated to 1,
-            //and if it's player 2's turn, the value for the next player should be updated to 0;
-            string nextPlayer = currentPlayerTurn == GamePiece.Player.PLAYER1 ? "1" : "0";
-
-            using (var client = new HttpClient())
-            {
-                var values = new Dictionary<string, string>
-                {
-                    { "gameID", gameID.ToString() },
-                    { "numOfPlayers", numOfPlayers.ToString() },
-                    { "currentPlayerTurn", nextPlayer },
-                    { "sourceCol", sourceCol.ToString() },
-                    { "sourceRow", sourceRow.ToString() },
-                    { "destCol", destCol.ToString() },
-                    { "destRow", destRow.ToString() }
-                };
-
-                var content = new FormUrlEncodedContent(values);
-
-                var response = await client.PostAsync("http://abugharbieh.com/test/writeStuff2.php", content);
-
-                return await response.Content.ReadAsStringAsync();
-            }
-        }
+       
         
         private async void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            //string address = string.Format(
-            //     "http://abugharbieh.com/test/writeStuff2.php?gameID={0}",
-            //     Uri.EscapeDataString("1"));
+   
+        }
 
-            string address = string.Format(
-              "http://abugharbieh.com/test/writeStuff2.php");
-            using (var client = new HttpClient())
-            {
-
-                var x = await client.GetStringAsync(address);
-            }
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            PageTransitionHelper.transitionToPage(new GameLobby());
         }
     }
 }
