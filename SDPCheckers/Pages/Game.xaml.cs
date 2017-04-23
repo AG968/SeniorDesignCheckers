@@ -484,14 +484,8 @@ namespace SDPCheckers.Pages
             return boardHeight;
         }
 
-       
-        
-        private async void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-   
-        }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void quitGameClick(object sender, RoutedEventArgs e)
         {
             PageTransitionHelper.transitionToPage(new GameLobby());
         }
