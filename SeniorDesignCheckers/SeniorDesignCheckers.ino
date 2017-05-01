@@ -97,15 +97,6 @@ void setupReedSwitchPins(){
   pinMode(switch27,INPUT_PULLUP);
 }
 
-void setup() {
-  setupMotors();
-  
-
-  
-  setupReedSwitchPins();
-  Serial.begin(9600);
-}
-
 //Resets the position of the magnet back to the bottom left corner
 void resetMagnetPosition(){
   //Lower the z motor
@@ -120,10 +111,10 @@ void resetMagnetPosition(){
   {
     digitalWrite(xMotorStepPin,HIGH);
     digitalWrite(yMotorStepPin,HIGH);
-    delayMicroseconds(50);
+    delayMicroseconds(200);
     digitalWrite(xMotorStepPin,LOW);
     digitalWrite(yMotorStepPin,LOW);
-    delayMicroseconds(50);
+    delayMicroseconds(200);
   }
 }
 
@@ -188,6 +179,14 @@ void movePiece(int startXPos, int startYPos, int destXPos, int destYPos){
   //Lower the motor to release hold of piece
   zMotor.lower();
 }
+
+void setup() {
+  setupMotors();
+  setupReedSwitchPins();
+  Serial.begin(9600);
+  
+}
+
 void loop() {
   
   

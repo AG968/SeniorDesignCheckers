@@ -55,39 +55,59 @@ namespace SDPCheckers.Pages
             var controller = await (App.Current.MainWindow as MetroWindow).ShowProgressAsync("Waiting for opponent...", "Waiting for an opponent to join...", isCancelable: true);
             controller.SetIndeterminate();
 
-            var gameID = await DatabaseGameHelper.createGame();
-           Game newGame = new Game(GamePiece.Player.PLAYER1, Convert.ToInt32(gameID));
-
-            await Task.Run(async () =>
+            string statusString = await DatabaseGameHelper.createGame();
+            GameStatus createGameStatus = JsonConvert.DeserializeObject<GameStatus>(statusString);
+            if(createGameStatus.status == -1)
             {
+                await controller.CloseAsync();
+                await (App.Current.MainWindow as MetroWindow).ShowMessageAsync("Error while hosting game", "Please try again");
+            }
+            else
+            {
+                Game newGame = new Game(GamePiece.Player.PLAYER1, Convert.ToInt32(createGameStatus.gameID));
 
-                string gameStatusString = await DatabaseGameHelper.checkGameStatus(gameID);
-                GameStatus gameStatus = JsonConvert.DeserializeObject<GameStatus>(gameStatusString);
-                while (newGame.numOfPlayers == 1)
+                await Task.Run(async () =>
                 {
-                    if (gameStatus.status == 1)
+
+                    string gameStatusString = await DatabaseGameHelper.checkGameStatus(createGameStatus.gameID.ToString());
+                    //Game status will give you the status of the game that was created, and check if anyone has joined before starting the game
+                    GameStatus gameStatus = JsonConvert.DeserializeObject<GameStatus>(gameStatusString);
+                    while (newGame.numOfPlayers == 1)
                     {
-                        newGame.numOfPlayers = gameStatus.numOfPlayers;
-                    }
-                    else
-                    {
-                        await controller.CloseAsync();
-                        await DatabaseGameHelper.deleteGame(Convert.ToInt32(gameID));
-                        await (App.Current.MainWindow as MetroWindow).ShowMessageAsync("Error while hosting game", "Plese try again");
-                        return;
+                        if (gameStatus.status == 1)
+                        {
+                            newGame.numOfPlayers = gameStatus.numOfPlayers;
+                        }
+                        else
+                        {
+                            await controller.CloseAsync();
+                            await DatabaseGameHelper.deleteGame(Convert.ToInt32(createGameStatus.gameID));
+                            await (App.Current.MainWindow as MetroWindow).ShowMessageAsync("Error while hosting game", "Please try again");
+                            return;
+                        }
+                        if (controller.IsCanceled)
+                        {
+                            await controller.CloseAsync();
+                            await DatabaseGameHelper.deleteGame(Convert.ToInt32(createGameStatus.gameID));
+                            return;
+                        }
+
+                        await Task.Delay(5000);
+                        gameStatusString = await DatabaseGameHelper.checkGameStatus(createGameStatus.gameID.ToString());
+                        gameStatus = JsonConvert.DeserializeObject<GameStatus>(gameStatusString);
                     }
 
+                });
 
-                    await Task.Delay(5000);
-                    gameStatusString = await DatabaseGameHelper.checkGameStatus(gameID);
-                    gameStatus = JsonConvert.DeserializeObject<GameStatus>(gameStatusString);
+                if (controller.IsOpen && !controller.IsCanceled)
+                {
+                    await controller.CloseAsync();
+
+                    PageTransitionHelper.transitionToPage(newGame);
                 }
-               
-            });
 
-            await controller.CloseAsync();
-            PageTransitionHelper.transitionToPage(newGame);
-                
+            }
+
 
         }
 
