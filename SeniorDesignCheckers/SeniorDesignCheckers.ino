@@ -1,27 +1,54 @@
 #include <Servo.h>
 
-//Position (in tile coordinates) of the z magnet
-int currentXPos = 0;
-int currentYPos = 0;
+const int BOARD_WIDTH = 4;
+const int BOARD_HEIGHT = 8;
+
+//Default to 1.  If we join a game, it will change to 2, if we create a game it will stay as 1.
+int gamePlayer = 1;
+
+//Position (in tile coordinates) of the z magnet - reset positon
+//of the magnet is [3,7]
+int currentXPos = 3;
+int currentYPos = 7;
 
 const int MAX_Z_HEIGHT = 180;
 const int MIN_Z_HEIGHT = 0;
 
 //Time it takes for stepper to step the distance of 1 tile in ms
-const int stepsToTravelOneTile = 500;
+const int STEPS_PER_TILE_X = 625;
+const int STEPS_PER_TILE_Y = 550;
 
 //Motor step and direction pins (stepper motors)
 const int xMotorStepPin = 0;
 const int xMotorDirectionPin = 0;
+const int xMotorSleepPin = 0;
+
 const int yMotorStepPin = 0;
 const int yMotorDirectionPin = 0;
+const int yMotorSleepPin = 0;
 
 enum stepperDirection{
   LEFT = 0,
   RIGHT = 1,
-  UP = 1,
-  DOWN = 0
+  UP = 0,
+  DOWN = 1
 };
+
+//Game parameters to be sent to database when move is made
+int sourceCol = 0;
+int sourceRow = 0;
+int destCol = 0;
+int destRow = 0;
+int gameID = 0;
+
+
+//Game board tiles to calculate which move was made.
+//Initialize 1 for tiles with player 1, 2 for player 2, 
+//-1 for empty tiles 
+int currentGameTileStatus[4][8] = {{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1}};
+int previousGameTileStatus[4][8] = {{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1}};
+int gameTiles[4][8] = {{-1,1,-1,-1,-1,-1,-1,2},{1,-1,-1,-1,-1,-1,2,-1},{-1,1,-1,-1,-1,-1,-1,2},{1,-1,-1,-1,-1,-1,2,-1}};
+
 
 class zMotor{
   public:
@@ -64,22 +91,22 @@ zMotor zMotor(zMotorPin);
 //**Note: switch positions names are named as : switch[column][row], with rows
 //and columns starting from the bottom left corner from the perspective of
 //player 1
-const int switch10 = 6;
-const int switch30 = A1;
-const int switch01 = 4;
-const int switch21 = 8;
-const int switch12 = A5;
-const int switch32 = A3;
-const int switch03 = 5;
-const int switch23 = 7;
-const int switch14 = 9;
-const int switch34 = A0;
-const int switch05 = 2;
-const int switch25 = 11;
-const int switch16 = A4;
-const int switch36 = A2;
-const int switch07 = 3;
-const int switch27 = 10;
+const int switch10 = 50;
+const int switch30 = 42;
+const int switch01 = 40;
+const int switch21 = 52;
+const int switch12 = 43;
+const int switch32 = 48;
+const int switch03 = 38;
+const int switch23 = 39;
+const int switch14 = 35;
+const int switch34 = 46;
+const int switch05 = 34;
+const int switch25 = 41;
+const int switch16 = 45;
+const int switch36 = 44;
+const int switch07 = 36;
+const int switch27 = 37;
 
 
 //Set up the motors' step and direction pins
@@ -116,23 +143,12 @@ void resetMagnetPosition(){
   //Lower the z motor
   zMotor.lower();
   
-  //Set direction to move z-axis magnet to lower left corner 
+  //Set direction to move z-axis magnet to upper right corner 
   //of the board
-  digitalWrite(xMotorDirectionPin,LEFT);
-  digitalWrite(yMotorDirectionPin,DOWN);
-  //Sufficient steps to bring the magnet to the lower left position
-  for(int steps = 0; steps < 30000; ++steps)
-  {
-    digitalWrite(xMotorStepPin,HIGH);
-    digitalWrite(yMotorStepPin,HIGH);
-    delayMicroseconds(200);
-    digitalWrite(xMotorStepPin,LOW);
-    digitalWrite(yMotorStepPin,LOW);
-    delayMicroseconds(200);
-  }
+  moveZMagnet(3,7);
 }
 
-//Moves the Z Magnet to the given position and update the current position
+  //Moves the Z Magnet to the given position and update the current position
 //of the zMagnet
 //param xPos: The x tile of the the game board (should be an int from 0-3 inclusive).
 //param yPos: The y tile of the game board (should be an int from 0-7 includsive).
@@ -152,30 +168,59 @@ void moveZMagnet(int xPos, int yPos){
   xOffset =  abs(xOffset);
   yOffset = abs(yOffset);
 
-  //Intentionally move in 1 axis at a time to avoid moving diagonally
-  //Move x axis
-  for(int steps = 0; steps < xOffset * stepsToTravelOneTile; ++steps)
+  Serial.println(xOffset);
+  Serial.println(yOffset);
+  digitalWrite(xMotorSleepPin,HIGH);
+  digitalWrite(yMotorSleepPin,HIGH);
+  //delay 1 ms after waking up as per datasheet
+  delay(3);
+  if((xOffset*STEPS_PER_TILE_X) > (yOffset * STEPS_PER_TILE_Y))
   {
-    digitalWrite(xMotorStepPin, HIGH);
-    delayMicroseconds(50);
-    digitalWrite(xMotorStepPin,LOW);
-    delayMicroseconds(50);
+      for(int steps = 0; steps < xOffset * STEPS_PER_TILE_X; ++steps)
+      {
+        digitalWrite(xMotorStepPin, HIGH);
+        if(steps < yOffset * STEPS_PER_TILE_Y){
+          digitalWrite(yMotorStepPin,HIGH);
+        }
+        
+        delayMicroseconds(400);
+        
+        digitalWrite(xMotorStepPin,LOW);
+        if(steps < yOffset * STEPS_PER_TILE_Y){
+          digitalWrite(yMotorStepPin,LOW);
+        }
+        
+        delayMicroseconds(400);
+      }
+  
+  }else{
+      for(int steps = 0; steps < yOffset * STEPS_PER_TILE_Y; ++steps)
+      {
+        digitalWrite(yMotorStepPin, HIGH);
+        if(steps < xOffset * STEPS_PER_TILE_X)
+        {
+          digitalWrite(xMotorStepPin,HIGH);
+        }
+        
+        delayMicroseconds(400);
+        
+        digitalWrite(yMotorStepPin,LOW);
+        if(steps < xOffset * STEPS_PER_TILE_X){
+          digitalWrite(xMotorStepPin,LOW);
+        }
+        
+        delayMicroseconds(400);
+      }
   }
-
-  //Move y axis
-  for(int steps = 0; steps < yOffset * stepsToTravelOneTile; ++steps)
-  {
-    digitalWrite(yMotorStepPin, HIGH);
-    delayMicroseconds(50);
-    digitalWrite(yMotorStepPin,LOW);
-    delayMicroseconds(50);
-  }
-
+  
   //Update the current position
   currentXPos = xPos;
   currentYPos = yPos;
-}
 
+  //Set drivers to sleep after moving is done
+  digitalWrite(xMotorSleepPin,LOW);
+  digitalWrite(yMotorSleepPin,LOW);
+}
 
 
 //Moves a checkers piece 
@@ -194,15 +239,222 @@ void movePiece(int startXPos, int startYPos, int destXPos, int destYPos){
   zMotor.lower();
 }
 
+//Update the status of the previous game status to the current,
+//so that we could update the current  game status with the values
+//from the digital pins
+void transferGameTileStatus(){
+  previousGameTileStatus[1][0] = currentGameTileStatus[1][0];
+  previousGameTileStatus[3][0] = currentGameTileStatus[3][0];
+  previousGameTileStatus[0][1] = currentGameTileStatus[0][1];
+  previousGameTileStatus[2][1] = currentGameTileStatus[2][1];
+  previousGameTileStatus[1][2] = currentGameTileStatus[1][2];
+  previousGameTileStatus[3][2] = currentGameTileStatus[3][2];
+  previousGameTileStatus[0][3] = currentGameTileStatus[0][3];
+  previousGameTileStatus[2][3] = currentGameTileStatus[2][3];
+  previousGameTileStatus[1][4] = currentGameTileStatus[1][4];
+  previousGameTileStatus[3][4] = currentGameTileStatus[3][4];
+  previousGameTileStatus[0][5] = currentGameTileStatus[0][5];
+  previousGameTileStatus[2][5] = currentGameTileStatus[2][5];
+  previousGameTileStatus[1][6] = currentGameTileStatus[1][6];
+  previousGameTileStatus[3][6] = currentGameTileStatus[3][6];
+  previousGameTileStatus[0][7] = currentGameTileStatus[0][7];
+  previousGameTileStatus[2][7] = currentGameTileStatus[2][7];
+}
+
+//Reads the digital pins to get the state of the game
+//and updates the previousGameTileStatus and currentGameTileStatus.
+void getGameTileStatus(){
+  transferGameTileStatus();
+  
+  currentGameTileStatus[1][0] = digitalRead(switch10);
+  currentGameTileStatus[3][0] = digitalRead(switch30);
+  currentGameTileStatus[0][1] = digitalRead(switch01);
+  currentGameTileStatus[2][1] = digitalRead(switch21);
+  currentGameTileStatus[1][2] = digitalRead(switch12);
+  currentGameTileStatus[3][2] = digitalRead(switch32);
+  currentGameTileStatus[0][3] = digitalRead(switch03);
+  currentGameTileStatus[2][3] = digitalRead(switch23);
+  currentGameTileStatus[1][4] = digitalRead(switch14);
+  currentGameTileStatus[3][4] = digitalRead(switch34);
+  currentGameTileStatus[0][5] = digitalRead(switch05);
+  currentGameTileStatus[2][5] = digitalRead(switch25);
+  currentGameTileStatus[1][6] = digitalRead(switch16);
+  currentGameTileStatus[3][6] = digitalRead(switch36);
+  currentGameTileStatus[0][7] = digitalRead(switch07);
+  currentGameTileStatus[2][7] = digitalRead(switch27);
+}
+
+//////////////WEB POST/GET SECTION
+void postGameStatus(){
+  //Find which piece moved
+  for (int column = 0; column < BOARD_WIDTH; ++column){
+    for (int row = 0; row < BOARD_HEIGHT; ++row){
+      // If the tile state changed
+      if(currentGameTileStatus[column][row] != previousGameTileStatus[column][row])
+      {
+        //The tile moved FROM this tile
+        if(currentGameTileStatus[column][row] > previousGameTileStatus[column][row])
+        {
+          //In the case we eat a piece, we will have two tiles whose state
+          //were changed.  e.g the piece that ate the other piece moved, and the
+          //piece that was eaten was removed from the board.
+          if(gameTiles[column][row] == gamePlayer)
+          { 
+            sourceCol = column;
+            sourceRow = row;
+          }
+          
+        }
+        else
+        {
+            destCol = column;
+            destRow = row;
+            gameTiles[column][row] = gamePlayer;
+        }
+      }
+    }
+  }
+
+  postToGameServer("");
+}
+
+//Sends a GET requeset to HTTP Client to get the status of the game
+void getFromGameServer(String request){
+ //Send a 'g' to the ESP8266 to let it know that we want to do a GET
+ Serial1.println('g');
+
+  while(Serial1.readStringUntil('\n') != "*\r")
+  {
+  //Wait for wifi module to request the gameID param for the GET
+  }
+
+  //ESP8266 wifi module is expecting a comma separated string with the
+  //following parameters:
+  // Request,gameID,numOfPlayers,currentPlayerTurn,sourceCol,sourceRow,destCol,destRow
+  // We only need gameID, so we can pass in 0 as the other parameters
+  Serial1.print(request);
+  Serial1.print(',');
+  Serial1.print(gameID);
+  Serial1.println(",0,0,0,0,0,0");
+
+  while(Serial1.available() < 1)
+  {
+    //Wait for GET response from ESP8266
+  }
+
+  //GET Request is complete, so read the JSON response from the server
+  //and start parsing
+  while(Serial1.readStringUntil('\n') != "COMPLETE")
+  {
+     // J-SON!!!!! Parse the incoming string
+  }
+
+ }
+
+void postToGameServer(String request)
+{
+    //Send a 'p' to let the ESP8266 know that we want to do a POST
+    Serial.println("Sending p");
+  Serial1.println('p');
+  
+  while(Serial1.readStringUntil('\n') != "*\r")
+  {
+    Serial.println("Waiting...");
+    //Wait for the ESP8266 to request the POST parameters
+  }
+
+Serial.println("Got *");
+  //ESP8266 wifi module is expecting a comma separated string with the
+  //following parameters:
+  // Request,gameID,numOfPlayers,currentPlayerTurn,sourceCol,sourceRow,destCol,destRow
+  // If the passed in parameters are not needed for the specified request,
+  // then they are ignored
+  int nextPlayer = gamePlayer == 1 ? 2 : 1;
+  
+  Serial1.print(request); //Request
+  Serial1.print(',');
+  Serial1.print(gameID);
+  Serial1.print(",2,"); //numOfPlayers
+  Serial1.print(nextPlayer);
+  Serial1.print(',');
+  Serial1.print(sourceCol);
+  Serial1.print(',');
+  Serial1.print(sourceRow);
+  Serial1.print(',');
+  Serial1.print(destCol);
+  Serial1.print(',');
+  Serial1.println(destRow);
+
+Serial.println("Sent parameters");
+  //Wait for POST request to be sent
+  while(Serial1.readStringUntil('\n') != "COMPLETE\r")
+  {
+    Serial.println("Waiting for post to complete");
+    //Parse JSON to get GAME ID
+  }
+
+  Serial.println("Done posting");
+}
+
+void connectToWifi(String ssid, String password)
+{
+  Serial.println("Sending n");
+  Serial1.print('n'); 
+  
+  while(Serial1.readStringUntil('\n') != "*\r"){
+ 
+    Serial.println("Waiting.");
+  }
+  Serial.print("Sending network ssid:");
+  Serial.println(ssid);
+  Serial1.print(ssid);
+
+   while(Serial1.readStringUntil('\n') != "*\r"){
+    //Wait
+  }
+
+  Serial.print("Sending network password:");
+  Serial.println(password);
+  Serial1.print(password);
+}
+
+void disconnectFromWifi(){
+  Serial.println("Sending d");
+  Serial1.print('d');
+  String disconnectStatus = Serial1.readStringUntil('\n');
+  while((disconnectStatus != "wifi disconnected\r") && (disconnectStatus != "wifi disconnection failed\r")){
+    //Serial.println("Disconnecting...");
+  }
+  Serial.println("Disconnected");
+}
+
+/////////END WEB POST/GET
+
+
 void setup() {
   setupMotors();
   setupReedSwitchPins();
   Serial.begin(115200);
-  
+
+  //ESP8266 serial
+  Serial1.begin(115200);
+
+gameID = 1;
 }
 
 void loop() {
-  
+    if(Serial.available()>0){
+      char letter = Serial.read();
+      if(letter == 'p'){
+        postToGameServer("");
+      }
+      else if(letter == 'n'){
+        connectToWifi("John","holaamigo");
+      }
+      else if(letter == 'd'){
+        disconnectFromWifi();
+      }
+  }
   
 }
 
