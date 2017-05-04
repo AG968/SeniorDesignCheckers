@@ -4,6 +4,9 @@
 int currentXPos = 0;
 int currentYPos = 0;
 
+const int MAX_Z_HEIGHT = 180;
+const int MIN_Z_HEIGHT = 0;
+
 //Time it takes for stepper to step the distance of 1 tile in ms
 const int stepsToTravelOneTile = 500;
 
@@ -28,15 +31,26 @@ class zMotor{
 
   //Raises the zMotor and waits half a second
   void raise(){
-    servo.write(180);
+    int i;
+    //Control the speed at which the zMotor is raised
+    for(i = MIN_Z_HEIGHT; i < MAX_Z_HEIGHT; ++i){
+      servo.write(i);
+      delay(50);
+    }
     delay(500);
   }
 
   //Lowers the zMotor and waits half a second
   void lower(){
-    servo.write(0);
+    int i;
+    //Control the speed at which the zMotor is lowered
+    for(i = MAX_Z_HEIGHT; i < MIN_Z_HEIGHT; --i){
+      servo.write(i);
+      delay(50);
+    }
     delay(500);
   }
+  
   private:
     Servo servo;
 };
@@ -49,7 +63,7 @@ zMotor zMotor(zMotorPin);
 //Reed switch pins 
 //**Note: switch positions names are named as : switch[column][row], with rows
 //and columns starting from the bottom left corner from the perspective of
-//the player.  User with board is player 1.
+//player 1
 const int switch10 = 6;
 const int switch30 = A1;
 const int switch01 = 4;
@@ -105,7 +119,7 @@ void resetMagnetPosition(){
   //Set direction to move z-axis magnet to lower left corner 
   //of the board
   digitalWrite(xMotorDirectionPin,LEFT);
-  digitalWrite(yMotorDirectionPin,LEFT);
+  digitalWrite(yMotorDirectionPin,DOWN);
   //Sufficient steps to bring the magnet to the lower left position
   for(int steps = 0; steps < 30000; ++steps)
   {
@@ -131,12 +145,12 @@ void moveZMagnet(int xPos, int yPos){
   int xDirection = xOffset < 0 ? RIGHT: LEFT;
   int yDirection = yOffset < 0 ? UP : DOWN;
 
-  xOffset =  abs(xOffset);
-  yOffset = abs(yOffset);
-
   //Set direction of motors
   digitalWrite(xMotorDirectionPin, xDirection);
   digitalWrite(yMotorDirectionPin, yDirection);
+
+  xOffset =  abs(xOffset);
+  yOffset = abs(yOffset);
 
   //Intentionally move in 1 axis at a time to avoid moving diagonally
   //Move x axis
@@ -183,7 +197,7 @@ void movePiece(int startXPos, int startYPos, int destXPos, int destYPos){
 void setup() {
   setupMotors();
   setupReedSwitchPins();
-  Serial.begin(9600);
+  Serial.begin(115200);
   
 }
 
