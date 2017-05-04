@@ -1,4 +1,5 @@
 #include <Servo.h>
+#include <ArduinoJson.h>
 
 const int BOARD_WIDTH = 4;
 const int BOARD_HEIGHT = 8;
@@ -86,6 +87,20 @@ class zMotor{
 const int zMotorPin = 0;
 
 zMotor zMotor(zMotorPin);
+
+const int NUM_OF_JSON_FIELDS = 8;
+const int MAX_CONTENT_SIZE = 512;
+struct StatusResponse{
+  int status;
+  int gameID;
+  int numOfPlayers;
+  int currentPlayerTurn;
+  int sourceCol;
+  int sourceRow;
+  int destCol;
+  int destRow;
+};
+
 
 //Reed switch pins 
 //**Note: switch positions names are named as : switch[column][row], with rows
@@ -321,13 +336,14 @@ void postGameStatus(){
 //Sends a GET requeset to HTTP Client to get the status of the game
 void getFromGameServer(String request){
  //Send a 'g' to the ESP8266 to let it know that we want to do a GET
+Serial.println ("Sending g");
  Serial1.println('g');
 
   while(Serial1.readStringUntil('\n') != "*\r")
   {
   //Wait for wifi module to request the gameID param for the GET
   }
-
+  Serial.println ("Got *");
   //ESP8266 wifi module is expecting a comma separated string with the
   //following parameters:
   // Request,gameID,numOfPlayers,currentPlayerTurn,sourceCol,sourceRow,destCol,destRow
@@ -341,13 +357,19 @@ void getFromGameServer(String request){
   {
     //Wait for GET response from ESP8266
   }
+  Serial.println ("GOT ESP RESPONSE");
 
   //GET Request is complete, so read the JSON response from the server
   //and start parsing
-  while(Serial1.readStringUntil('\n') != "COMPLETE")
+  String x;
+  String y = "";
+  while((x = Serial1.readStringUntil('\n')) != "COMPLETE\r")
   {
+    y +=x;
      // J-SON!!!!! Parse the incoming string
   }
+  Serial.println(y);
+  Serial.println ("DONE");
 
  }
 
@@ -356,9 +378,11 @@ void postToGameServer(String request)
     //Send a 'p' to let the ESP8266 know that we want to do a POST
     Serial.println("Sending p");
   Serial1.println('p');
-  
-  while(Serial1.readStringUntil('\n') != "*\r")
+
+  String x;
+  while((x = Serial1.readStringUntil('\n')) != "*\r")
   {
+    Serial.println(x);
     Serial.println("Waiting...");
     //Wait for the ESP8266 to request the POST parameters
   }
@@ -386,14 +410,25 @@ Serial.println("Got *");
   Serial1.println(destRow);
 
 Serial.println("Sent parameters");
-  //Wait for POST request to be sent
-  while(Serial1.readStringUntil('\n') != "COMPLETE\r")
+ 
+   StatusResponse statusResponse;
+
+  String responseString;
+  while((x = Serial1.readStringUntil('\n')) != "COMPLETE\r")
   {
-    Serial.println("Waiting for post to complete");
-    //Parse JSON to get GAME ID
+    responseString += x;
+    Serial.print(x); 
   }
 
-  Serial.println("Done posting");
+  responseString.remove(responseString.indexOf("post disconnected the client"));
+  responseString.trim();
+  responseString.remove(0,responseString.indexOf('{'));
+  
+  responseString.remove(responseString.indexOf('}') + 1);
+  Serial.println("Done posting.  Parsing JSON");
+  parseHTTPJsonResponse(&statusResponse, responseString);
+  
+  
 }
 
 void connectToWifi(String ssid, String password)
@@ -422,10 +457,72 @@ void disconnectFromWifi(){
   Serial.println("Sending d");
   Serial1.print('d');
   String disconnectStatus = Serial1.readStringUntil('\n');
+  /*
   while((disconnectStatus != "wifi disconnected\r") && (disconnectStatus != "wifi disconnection failed\r")){
     //Serial.println("Disconnecting...");
   }
+  */
   Serial.println("Disconnected");
+}
+
+
+void parseHTTPJsonResponse(StatusResponse* statusResponse, String serializedJSON){
+  Serial.println("The response to deserialize:");
+  Serial.println(serializedJSON);
+  const size_t BUFFER_SIZE = 
+    JSON_OBJECT_SIZE(NUM_OF_JSON_FIELDS) + // StatusResponse object has 7 elements
+    MAX_CONTENT_SIZE; //extra space for strings
+
+  StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
+  //DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
+  JsonObject& JSONStatusResponse =  jsonBuffer.parseObject(serializedJSON);
+/*
+ const char* status = JSONStatusResponse["gameID"];
+ const char* gameID = JSONStatusResponse["gameID"];
+ const char* numOfPlayers = JSONStatusResponse["numOfPlayers"];
+ const char* currentPlayerTurn = JSONStatusResponse["currentPlayerTurn"];
+ const char* sourceCol = JSONStatusResponse["sourceCol"];
+ const char* sourceRow = JSONStatusResponse["sourceRow"];
+ const char* destCol = JSONStatusResponse["destCol"];
+ const char* destRow = JSONStatusResponse["destRow"];
+*/
+/*
+  strcpy(statusResponse->status, JSONStatusResponse["status"]);
+  strcpy(statusResponse->gameID, JSONStatusResponse["gameID"]);
+  strcpy(statusResponse->numOfPlayers, JSONStatusResponse["numOfPlayers"]);
+  strcpy(statusResponse->currentPlayerTurn, JSONStatusResponse["currentPlayerTurn"]);
+  strcpy(statusResponse->sourceCol, JSONStatusResponse["sourceCol"]);
+  strcpy(statusResponse->sourceRow, JSONStatusResponse["sourceRow"]);
+  strcpy(statusResponse->destCol, JSONStatusResponse["destCol"]);
+  strcpy(statusResponse->destRow, JSONStatusResponse["destRow"]);
+  */
+ 
+  statusResponse->status = JSONStatusResponse["status"];
+  statusResponse->gameID = JSONStatusResponse["gameID"];
+  statusResponse->numOfPlayers = JSONStatusResponse["numOfPlayers"];
+  statusResponse->currentPlayerTurn = JSONStatusResponse["currentPlayerTurn"];
+  statusResponse->sourceCol = JSONStatusResponse["sourceCol"];
+  statusResponse->sourceRow = JSONStatusResponse["sourceRow"];
+  statusResponse->destCol = JSONStatusResponse["destCol"];
+  statusResponse->destRow = JSONStatusResponse["destRow"];
+
+  Serial.println("Done deserializing");
+  Serial.print("Status: ");
+  Serial.println(statusResponse->status);
+  Serial.print("gameID: ");
+  Serial.println(statusResponse->gameID);
+  Serial.print("numOfPlayers: ");
+  Serial.println(statusResponse->numOfPlayers);
+  Serial.print("currentPlayerTurn: ");
+  Serial.println(statusResponse->currentPlayerTurn);
+  Serial.print("sourceCol: ");
+  Serial.println(statusResponse->sourceCol);
+  Serial.print("sourceRow: ");
+  Serial.println(statusResponse->sourceRow);
+  Serial.print("destCol: ");
+  Serial.println(statusResponse->destCol);
+  Serial.print("destRow: ");
+  Serial.println(statusResponse->destRow);
 }
 
 /////////END WEB POST/GET
@@ -446,13 +543,15 @@ void loop() {
     if(Serial.available()>0){
       char letter = Serial.read();
       if(letter == 'p'){
-        postToGameServer("");
+        postToGameServer("0");
       }
       else if(letter == 'n'){
         connectToWifi("John","holaamigo");
       }
       else if(letter == 'd'){
         disconnectFromWifi();
+      }else if (letter == 'g'){
+        getFromGameServer("");
       }
   }
   
