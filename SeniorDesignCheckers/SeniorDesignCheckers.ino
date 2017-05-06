@@ -1,5 +1,4 @@
 #include <Servo.h>
-#include <ArduinoJson.h>
 
 const int BOARD_WIDTH = 4;
 const int BOARD_HEIGHT = 8;
@@ -12,8 +11,9 @@ int gamePlayer = 1;
 int currentXPos = 3;
 int currentYPos = 7;
 
-const int MAX_Z_HEIGHT = 180;
-const int MIN_Z_HEIGHT = 0;
+//Servo is flipped, so our max will be our min value
+const int MAX_Z_HEIGHT = 90;
+const int MIN_Z_HEIGHT = 180;
 
 //Time it takes for stepper to step the distance of 1 tile in ms
 const int STEPS_PER_TILE_X = 625;
@@ -61,9 +61,9 @@ class zMotor{
   void raise(){
     int i;
     //Control the speed at which the zMotor is raised
-    for(i = MIN_Z_HEIGHT; i < MAX_Z_HEIGHT; ++i){
+    for(i = MIN_Z_HEIGHT; i > MAX_Z_HEIGHT; --i){
       servo.write(i);
-      delay(50);
+      delay(3);
     }
     delay(500);
   }
@@ -72,9 +72,9 @@ class zMotor{
   void lower(){
     int i;
     //Control the speed at which the zMotor is lowered
-    for(i = MAX_Z_HEIGHT; i < MIN_Z_HEIGHT; --i){
+    for(i = MAX_Z_HEIGHT; i < MIN_Z_HEIGHT; ++i){
       servo.write(i);
-      delay(50);
+      delay(3);
     }
     delay(500);
   }
@@ -90,16 +90,7 @@ zMotor zMotor(zMotorPin);
 
 const int NUM_OF_JSON_FIELDS = 8;
 const int MAX_CONTENT_SIZE = 512;
-struct StatusResponse{
-  int status;
-  int gameID;
-  int numOfPlayers;
-  int currentPlayerTurn;
-  int sourceCol;
-  int sourceRow;
-  int destCol;
-  int destRow;
-};
+
 
 
 //Reed switch pins 
@@ -330,7 +321,7 @@ void postGameStatus(){
     }
   }
 
-  postToGameServer("");
+  postToGameServer("0");
 }
 
 //Sends a GET requeset to HTTP Client to get the status of the game
@@ -411,23 +402,72 @@ Serial.println("Got *");
 
 Serial.println("Sent parameters");
  
-   StatusResponse statusResponse;
 
-  String responseString;
+String responseString = "";
+  
   while((x = Serial1.readStringUntil('\n')) != "COMPLETE\r")
   {
     responseString += x;
-    Serial.print(x); 
   }
+  
+Serial.println(responseString);
+responseString.remove(0,responseString.indexOf('{'));
+Serial.println(responseString);  
 
-  responseString.remove(responseString.indexOf("post disconnected the client"));
-  responseString.trim();
-  responseString.remove(0,responseString.indexOf('{'));
+
+  int endIndex = responseString.indexOf(',');
+  int status = responseString.substring(1,endIndex ).toInt();
+  responseString.remove(0, endIndex + 3 );
+  Serial.print("After parsing status: ");
+  Serial.println(responseString);
+  // {1,'2','3','4','5'}lkjl
+  endIndex  = responseString.indexOf('\'');
+  int gameID = responseString.substring(0,endIndex).toInt();;
+  responseString.remove(0, endIndex+5);
+
+  Serial.print("After parsing gameID: ");
+  Serial.println(responseString);
   
-  responseString.remove(responseString.indexOf('}') + 1);
-  Serial.println("Done posting.  Parsing JSON");
-  parseHTTPJsonResponse(&statusResponse, responseString);
+  endIndex  = responseString.indexOf('\'');
+  int numOfPlayers = responseString.substring(0,endIndex).toInt();
+  responseString.remove(0, endIndex+5);
   
+  endIndex  = responseString.indexOf('\'');
+  int currentPlayerTurn = responseString.substring(0,endIndex).toInt();
+  responseString.remove(0, endIndex+5);
+  
+  endIndex  = responseString.indexOf('\'');
+  int sourceCol = responseString.substring(0,endIndex).toInt();
+  responseString.remove(0, endIndex+5);
+  
+  endIndex  = responseString.indexOf('\'');
+  int sourceRow = responseString.substring(0,endIndex).toInt();
+  responseString.remove(0, endIndex+5);
+  
+  endIndex  = responseString.indexOf('\'');
+  int destCol = responseString.substring(0,endIndex).toInt();
+  responseString.remove(0, endIndex+5);
+  
+  endIndex  = responseString.indexOf('}');
+  int destRow = responseString.substring(0,endIndex).toInt();
+  //responseString.remove(0, endIndex+3);
+
+  Serial.println(status);
+  Serial.println(gameID);
+  Serial.println(numOfPlayers);
+  Serial.println(currentPlayerTurn);
+  Serial.println(sourceCol);
+  Serial.println(sourceRow);
+  Serial.println(destCol);
+  Serial.println(destRow);
+}
+
+void getWifiNetworks(){
+  Serial.println("Sending s");
+  Serial1.print('s');
+  while(Serial1.readStringUntil('n') != "*\r"){
+    
+  }
   
 }
 
@@ -457,74 +497,9 @@ void disconnectFromWifi(){
   Serial.println("Sending d");
   Serial1.print('d');
   String disconnectStatus = Serial1.readStringUntil('\n');
-  /*
-  while((disconnectStatus != "wifi disconnected\r") && (disconnectStatus != "wifi disconnection failed\r")){
-    //Serial.println("Disconnecting...");
-  }
-  */
+
   Serial.println("Disconnected");
 }
-
-
-void parseHTTPJsonResponse(StatusResponse* statusResponse, String serializedJSON){
-  Serial.println("The response to deserialize:");
-  Serial.println(serializedJSON);
-  const size_t BUFFER_SIZE = 
-    JSON_OBJECT_SIZE(NUM_OF_JSON_FIELDS) + // StatusResponse object has 7 elements
-    MAX_CONTENT_SIZE; //extra space for strings
-
-  StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
-  //DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
-  JsonObject& JSONStatusResponse =  jsonBuffer.parseObject(serializedJSON);
-/*
- const char* status = JSONStatusResponse["gameID"];
- const char* gameID = JSONStatusResponse["gameID"];
- const char* numOfPlayers = JSONStatusResponse["numOfPlayers"];
- const char* currentPlayerTurn = JSONStatusResponse["currentPlayerTurn"];
- const char* sourceCol = JSONStatusResponse["sourceCol"];
- const char* sourceRow = JSONStatusResponse["sourceRow"];
- const char* destCol = JSONStatusResponse["destCol"];
- const char* destRow = JSONStatusResponse["destRow"];
-*/
-/*
-  strcpy(statusResponse->status, JSONStatusResponse["status"]);
-  strcpy(statusResponse->gameID, JSONStatusResponse["gameID"]);
-  strcpy(statusResponse->numOfPlayers, JSONStatusResponse["numOfPlayers"]);
-  strcpy(statusResponse->currentPlayerTurn, JSONStatusResponse["currentPlayerTurn"]);
-  strcpy(statusResponse->sourceCol, JSONStatusResponse["sourceCol"]);
-  strcpy(statusResponse->sourceRow, JSONStatusResponse["sourceRow"]);
-  strcpy(statusResponse->destCol, JSONStatusResponse["destCol"]);
-  strcpy(statusResponse->destRow, JSONStatusResponse["destRow"]);
-  */
- 
-  statusResponse->status = JSONStatusResponse["status"];
-  statusResponse->gameID = JSONStatusResponse["gameID"];
-  statusResponse->numOfPlayers = JSONStatusResponse["numOfPlayers"];
-  statusResponse->currentPlayerTurn = JSONStatusResponse["currentPlayerTurn"];
-  statusResponse->sourceCol = JSONStatusResponse["sourceCol"];
-  statusResponse->sourceRow = JSONStatusResponse["sourceRow"];
-  statusResponse->destCol = JSONStatusResponse["destCol"];
-  statusResponse->destRow = JSONStatusResponse["destRow"];
-
-  Serial.println("Done deserializing");
-  Serial.print("Status: ");
-  Serial.println(statusResponse->status);
-  Serial.print("gameID: ");
-  Serial.println(statusResponse->gameID);
-  Serial.print("numOfPlayers: ");
-  Serial.println(statusResponse->numOfPlayers);
-  Serial.print("currentPlayerTurn: ");
-  Serial.println(statusResponse->currentPlayerTurn);
-  Serial.print("sourceCol: ");
-  Serial.println(statusResponse->sourceCol);
-  Serial.print("sourceRow: ");
-  Serial.println(statusResponse->sourceRow);
-  Serial.print("destCol: ");
-  Serial.println(statusResponse->destCol);
-  Serial.print("destRow: ");
-  Serial.println(statusResponse->destRow);
-}
-
 /////////END WEB POST/GET
 
 
@@ -536,26 +511,32 @@ void setup() {
   //ESP8266 serial
   Serial1.begin(115200);
 
-gameID = 1;
+gameID = 4;
 }
 
 void loop() {
-    if(Serial.available()>0){
-      char letter = Serial.read();
-      if(letter == 'p'){
-        postToGameServer("0");
+    if(Serial.available()>0)
+    {
+        char letter = Serial.read();
+        if(letter == 'p'){
+          postToGameServer("0");
+        }
+        else if(letter == 'n'){
+          connectToWifi("John","holaamigo");
+        }
+        else if(letter == 'd'){
+          disconnectFromWifi();
+        }else if (letter == 'g'){
+          getFromGameServer("");
+        }
+        else if (letter == 's'){
+          getWifiNetworks();
+        }
       }
-      else if(letter == 'n'){
-        connectToWifi("John","holaamigo");
-      }
-      else if(letter == 'd'){
-        disconnectFromWifi();
-      }else if (letter == 'g'){
-        getFromGameServer("");
-      }
-  }
   
 }
+
+
 
 
 

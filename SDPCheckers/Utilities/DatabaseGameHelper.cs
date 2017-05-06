@@ -20,7 +20,8 @@ namespace SDPCheckers.Utilities
             {
                 var values = new Dictionary<string, string>
                 {
-                    { "gameID", gameID.ToString() },
+                    { "source", "ARDUINO" },
+                    { "gameID", "4" },
                     { "numOfPlayers", numOfPlayers.ToString() },
                     { "currentPlayerTurn", nextPlayer },
                     { "sourceCol", sourceCol.ToString() },
