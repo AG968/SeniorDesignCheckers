@@ -20,6 +20,7 @@ namespace SDPCheckers.Utilities
             {
                 var values = new Dictionary<string, string>
                 {
+                    { "source", "PC" },
                     { "gameID", gameID.ToString() },
                     { "numOfPlayers", numOfPlayers.ToString() },
                     { "currentPlayerTurn", nextPlayer },
@@ -45,7 +46,8 @@ namespace SDPCheckers.Utilities
             {
                 var values = new Dictionary<string, string>
                 {
-                    { "Request", "createGame" }
+                    { "Request", "createGame" },
+                    { "source", "PC" }
                 };
 
                 var content = new FormUrlEncodedContent(values);
@@ -64,6 +66,7 @@ namespace SDPCheckers.Utilities
                 var values = new Dictionary<string, string>
                 {
                     {"Request", "deleteGame" },
+                    {"source", "PC" },
                     {"gameID", gameID.ToString() }
                 };
 
@@ -82,6 +85,7 @@ namespace SDPCheckers.Utilities
                 var values = new Dictionary<string, string>
                 {
                     {"Request", "joinGame" },
+                    {"source", "PC" },
                     {"gameID", gameID }
                 };
 
@@ -95,7 +99,7 @@ namespace SDPCheckers.Utilities
         public static async Task<string> getListOfGames()
         {
             string address = string.Format(
-                 "http://abugharbieh.com/test/GameLobby.php?Request={0}",
+                 "http://abugharbieh.com/test/GameLobby.php?Request={0}&source=PC",
                  Uri.EscapeDataString("getListOfGames"));
 
             using (var client = new HttpClient())
@@ -108,7 +112,7 @@ namespace SDPCheckers.Utilities
         public static async Task<string> checkGameStatus(string gameID)
         {
             string address = string.Format(
-                "http://abugharbieh.com/test/GameStatus.php?gameID={0}",
+                "http://abugharbieh.com/test/GameStatus.php?gameID={0}&source=PC",
                  Uri.EscapeDataString(gameID));
 
             using (var client = new HttpClient())

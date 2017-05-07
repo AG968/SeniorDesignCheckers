@@ -11,8 +11,9 @@ int gamePlayer = 1;
 int currentXPos = 3;
 int currentYPos = 7;
 
-const int MAX_Z_HEIGHT = 180;
-const int MIN_Z_HEIGHT = 0;
+//Servo is flipped, so our max will be our min value
+const int MAX_Z_HEIGHT = 90;
+const int MIN_Z_HEIGHT = 180;
 
 //Time it takes for stepper to step the distance of 1 tile in ms
 const int STEPS_PER_TILE_X = 625;
@@ -34,6 +35,11 @@ enum stepperDirection{
   DOWN = 1
 };
 
+enum ServerResponseType{
+  LIST_OF_GAMES,
+  GAME_STATUS
+};
+
 //Game parameters to be sent to database when move is made
 int sourceCol = 0;
 int sourceRow = 0;
@@ -52,17 +58,19 @@ int gameTiles[4][8] = {{-1,1,-1,-1,-1,-1,-1,2},{1,-1,-1,-1,-1,-1,2,-1},{-1,1,-1,
 
 class zMotor{
   public:
-  zMotor(int motorPin){
+
+  void init(int motorPin){
     servo.attach(motorPin);
+    lower();
   }
 
   //Raises the zMotor and waits half a second
   void raise(){
     int i;
     //Control the speed at which the zMotor is raised
-    for(i = MIN_Z_HEIGHT; i < MAX_Z_HEIGHT; ++i){
+    for(i = MIN_Z_HEIGHT; i > MAX_Z_HEIGHT; --i){
       servo.write(i);
-      delay(50);
+      delay(5);
     }
     delay(500);
   }
@@ -71,9 +79,9 @@ class zMotor{
   void lower(){
     int i;
     //Control the speed at which the zMotor is lowered
-    for(i = MAX_Z_HEIGHT; i < MIN_Z_HEIGHT; --i){
+    for(i = MAX_Z_HEIGHT; i < MIN_Z_HEIGHT; ++i){
       servo.write(i);
-      delay(50);
+      delay(5);
     }
     delay(500);
   }
@@ -83,9 +91,14 @@ class zMotor{
 };
 
 //Servo motor pin
-const int zMotorPin = 0;
+const int zMotorPin = 9;
+zMotor zMotor;
 
-zMotor zMotor(zMotorPin);
+
+const int NUM_OF_JSON_FIELDS = 8;
+const int MAX_CONTENT_SIZE = 512;
+
+
 
 //Reed switch pins 
 //**Note: switch positions names are named as : switch[column][row], with rows
@@ -116,6 +129,7 @@ void setupMotors(){
   pinMode(yMotorStepPin, OUTPUT);
   pinMode(yMotorDirectionPin, OUTPUT);
 
+  zMotor.init(zMotorPin);
 }
 
 //Set up the reed switch pins as inputs and pull them up;
@@ -285,7 +299,9 @@ void getGameTileStatus(){
 }
 
 //////////////WEB POST/GET SECTION
-void postGameStatus(){
+
+///Checks to see which move the player made, and posts that move to the game server
+void endPlayerTurn(){
   //Find which piece moved
   for (int column = 0; column < BOARD_WIDTH; ++column){
     for (int row = 0; row < BOARD_HEIGHT; ++row){
@@ -315,50 +331,74 @@ void postGameStatus(){
     }
   }
 
-  postToGameServer("");
+  postToGameServer("0");
 }
 
 //Sends a GET requeset to HTTP Client to get the status of the game
-void getFromGameServer(String request){
+//Takes in either "getListOfGames" to get the list of existing games,
+//or "0" to check the status of the game for the current game ID
+void getGameStatus(String request){
  //Send a 'g' to the ESP8266 to let it know that we want to do a GET
- Serial1.println('g');
+Serial.println ("Sending g");
+ Serial1.print('g');
 
-  while(Serial1.readStringUntil('\n') != "*\r")
+  while(Serial1.readStringUntil('\n') != "*")
   {
   //Wait for wifi module to request the gameID param for the GET
   }
-
+  
+  Serial.println ("Got *");
   //ESP8266 wifi module is expecting a comma separated string with the
   //following parameters:
   // Request,gameID,numOfPlayers,currentPlayerTurn,sourceCol,sourceRow,destCol,destRow
   // We only need gameID, so we can pass in 0 as the other parameters
+  String command = request + "," + (String)gameID + ",2,0,0,0,0,0";
+  Serial.print(command);
+  Serial1.print(command);
+  /*
   Serial1.print(request);
   Serial1.print(',');
   Serial1.print(gameID);
   Serial1.println(",0,0,0,0,0,0");
-
+*/
   while(Serial1.available() < 1)
   {
     //Wait for GET response from ESP8266
   }
+  Serial.println ("GOT ESP RESPONSE");
 
   //GET Request is complete, so read the JSON response from the server
   //and start parsing
-  while(Serial1.readStringUntil('\n') != "COMPLETE")
+  String x;
+  String responseString = "";
+  while((x = Serial1.readStringUntil('\n')) != "COMPLETE\r")
   {
+    responseString +=x;
      // J-SON!!!!! Parse the incoming string
+  }
+
+  if(request  == "getListOfGames")
+  {
+    parseServerResponse(responseString, LIST_OF_GAMES);
+  }else{
+    parseServerResponse(responseString, GAME_STATUS);
   }
 
  }
 
+
+//Takes in a request (either "createGame", "joinGame", "deleteGame", or "0");
+//"0" means it will post the game status of the current gameID to the server.
 void postToGameServer(String request)
 {
     //Send a 'p' to let the ESP8266 know that we want to do a POST
     Serial.println("Sending p");
   Serial1.println('p');
-  
-  while(Serial1.readStringUntil('\n') != "*\r")
+
+  String x;
+  while((x = Serial1.readStringUntil('\n')) != "*\r")
   {
+    Serial.println(x);
     Serial.println("Waiting...");
     //Wait for the ESP8266 to request the POST parameters
   }
@@ -383,17 +423,172 @@ Serial.println("Got *");
   Serial1.print(',');
   Serial1.print(destCol);
   Serial1.print(',');
-  Serial1.println(destRow);
+  Serial1.print(destRow);
 
-Serial.println("Sent parameters");
-  //Wait for POST request to be sent
-  while(Serial1.readStringUntil('\n') != "COMPLETE\r")
+String responseString = "";
+  
+  while((x = Serial1.readStringUntil('\n')) != "COMPLETE\r")
   {
-    Serial.println("Waiting for post to complete");
-    //Parse JSON to get GAME ID
+    responseString += x;
   }
 
-  Serial.println("Done posting");
+Serial.println("Parameters sent:");
+Serial.print(request); Serial.print(','); Serial.print(gameID); Serial.print(",2,"); Serial.print(nextPlayer); Serial.print(","); Serial.print(sourceCol);
+Serial.print(','); Serial.print(sourceRow); Serial.print(','); Serial.print(destCol); Serial.print(','); Serial.println(destRow);
+Serial.println("Sent parameters");
+ 
+
+
+
+  //Parse the header out of the HTTP response until we get our PHP response
+  parseServerResponse(responseString, GAME_STATUS);
+ 
+}
+
+void parseServerResponse(String response, ServerResponseType type){
+  response.remove(0,response.indexOf('{'));
+  
+  switch(type)
+  {
+    case GAME_STATUS:
+      parseGameStatusResponse(response);
+      break;
+    case LIST_OF_GAMES:
+      parseListOfGamesResponse(response);
+      break;
+    default:
+      break;
+  }
+}
+
+void parseListOfWifiNetworks(String responseString){
+  Serial.print("Response:");
+  Serial.println(responseString);
+  int endIndex = responseString.indexOf(',');
+  int numOfWifiNetworks = responseString.substring(0,endIndex).toInt();
+  responseString.remove(0,endIndex+1);
+  
+  String wifiNetworks[200];
+  Serial.print("Num of networks:");
+  Serial.println(numOfWifiNetworks);
+  for(int i = 0; i < numOfWifiNetworks; ++i){
+    if(i != numOfWifiNetworks - 1){
+      endIndex = responseString.indexOf(',');
+    }
+    else{
+      endIndex = responseString.indexOf('*');
+    }
+    wifiNetworks[i] = responseString.substring(0,endIndex);
+    responseString.remove(0,endIndex+1);
+  }
+
+    Serial.println("Parsed networks");
+    for(int i = 0; i < numOfWifiNetworks; ++i){
+      Serial.println(wifiNetworks[i]);
+   }
+}
+
+//List of games response is {numOfGames,gameId1, gameId2,gameIdN}
+void parseListOfGamesResponse(String responseString){
+  Serial.println("Before parsing:");
+  Serial.println(responseString);
+  int endIndex = responseString.indexOf(',');
+  int gameListSize = responseString.substring(1,endIndex ).toInt();
+  responseString.remove(0, endIndex + 1 );
+
+  int gameID = -1;
+  int games[100];
+  memset(games,0,sizeof(games));
+  Serial.println("Parsing games");
+  for(int i = 0; i < gameListSize; ++i)
+  {
+    endIndex = responseString.indexOf(',');
+    Serial.print("Converting to int:");
+    Serial.println(responseString.substring(0,endIndex));
+    gameID = responseString.substring(0,endIndex).toInt();
+    Serial.println(gameID);
+    responseString.remove(0,endIndex + 1);
+    //Serial.println(responseString);
+    games[i] = gameID;
+  }
+  Serial.println("Games IDs:");
+  for(int i = 0; i < gameListSize; ++i){
+    Serial.println(games[i]);
+  }
+}
+
+void parseGameStatusResponse(String responseString){
+  int endIndex = responseString.indexOf(',');
+  int status = responseString.substring(1,endIndex ).toInt();
+   Serial.println(responseString);
+  responseString.remove(0, endIndex + 1 );
+  Serial.println(responseString);
+  //Parse gameID
+  endIndex  = responseString.indexOf(',');
+  int gameID = responseString.substring(0,endIndex).toInt();;
+  responseString.remove(0, endIndex+1);
+ Serial.println(responseString);
+  //Parse numOfPlayers
+  endIndex  = responseString.indexOf(',');
+  int numOfPlayers = responseString.substring(0,endIndex).toInt();
+  responseString.remove(0, endIndex+1);
+ Serial.println(responseString);
+  //Parse currentPlayerTurn
+  endIndex  = responseString.indexOf(',');
+  int currentPlayerTurn = responseString.substring(0,endIndex).toInt();
+  responseString.remove(0, endIndex+1);
+ Serial.println(responseString);
+  //Parse sourceCol
+  endIndex  = responseString.indexOf(',');
+  int sourceCol = responseString.substring(0,endIndex).toInt();
+  responseString.remove(0, endIndex+1);
+ Serial.println(responseString);
+  //Parse sourceRow
+  endIndex  = responseString.indexOf(',');
+  int sourceRow = responseString.substring(0,endIndex).toInt();
+  responseString.remove(0, endIndex+1);
+ Serial.println(responseString);
+  //Parse destCol
+  endIndex  = responseString.indexOf(',');
+  int destCol = responseString.substring(0,endIndex).toInt();
+  responseString.remove(0, endIndex+1);
+ Serial.println(responseString);
+  //Parse destRow
+  endIndex  = responseString.indexOf('}');
+  int destRow = responseString.substring(0,endIndex).toInt();
+
+  Serial.println(status);
+  Serial.println(gameID);
+  Serial.println(numOfPlayers);
+  Serial.println(currentPlayerTurn);
+  Serial.println(sourceCol);
+  Serial.println(sourceRow);
+  Serial.println(destCol);
+  Serial.println(destRow);
+  
+}
+
+void getWifiNetworks(){
+  Serial.println("Sending s");
+  Serial1.print('s');
+  //Serial.println("Sent s");
+  
+  while(Serial1.readStringUntil('\n') != "*\r"){
+      //Wait
+    
+  }
+
+  String response;
+  String x;
+  Serial.println("Getting networks...");
+  while((x = Serial1.readStringUntil('\n')) != "COMPLETE\r"){
+    response += x;
+  }
+  Serial.println("Done");
+  
+  parseListOfWifiNetworks(response);
+  
+  
 }
 
 void connectToWifi(String ssid, String password)
@@ -401,7 +596,7 @@ void connectToWifi(String ssid, String password)
   Serial.println("Sending n");
   Serial1.print('n'); 
   
-  while(Serial1.readStringUntil('\n') != "*\r"){
+  while(Serial1.readStringUntil('\n') != "*"){
  
     Serial.println("Waiting.");
   }
@@ -409,7 +604,7 @@ void connectToWifi(String ssid, String password)
   Serial.println(ssid);
   Serial1.print(ssid);
 
-   while(Serial1.readStringUntil('\n') != "*\r"){
+   while(Serial1.readStringUntil('\n') != "*"){
     //Wait
   }
 
@@ -422,12 +617,9 @@ void disconnectFromWifi(){
   Serial.println("Sending d");
   Serial1.print('d');
   String disconnectStatus = Serial1.readStringUntil('\n');
-  while((disconnectStatus != "wifi disconnected\r") && (disconnectStatus != "wifi disconnection failed\r")){
-    //Serial.println("Disconnecting...");
-  }
+
   Serial.println("Disconnected");
 }
-
 /////////END WEB POST/GET
 
 
@@ -439,24 +631,33 @@ void setup() {
   //ESP8266 serial
   Serial1.begin(115200);
 
-gameID = 1;
+gameID = 4;
 }
 
 void loop() {
-    if(Serial.available()>0){
-      char letter = Serial.read();
-      if(letter == 'p'){
-        postToGameServer("");
+    if(Serial.available()>0)
+    {
+        char letter = Serial.read();
+        if(letter == 'p'){
+          gameID = 17;
+          postToGameServer("joinGame");
+        }
+        else if(letter == 'n'){
+          connectToWifi("John","holaamigo");
+        }
+        else if(letter == 'd'){
+          disconnectFromWifi();
+        }else if (letter == 'g'){
+          getGameStatus("0");
+        }
+        else if (letter == 's'){
+          getWifiNetworks();
+        }
       }
-      else if(letter == 'n'){
-        connectToWifi("John","holaamigo");
-      }
-      else if(letter == 'd'){
-        disconnectFromWifi();
-      }
-  }
   
 }
+
+
 
 
 
