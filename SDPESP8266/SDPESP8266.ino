@@ -27,7 +27,6 @@ void setup() {
    // initializeWifiClient();
   //testPOST();
   //testGET();
-  disconnect();
 
   
 }
@@ -113,6 +112,7 @@ void testPOST()
 
      
      String request = Serial.readStringUntil(',');
+     request.trim();
      String gameID = Serial.readStringUntil(',');
      String numOfPlayers = Serial.readStringUntil(',');
      String currentPlayerTurn = Serial.readStringUntil(',');
@@ -120,7 +120,8 @@ void testPOST()
      String sourceRow = Serial.readStringUntil(',');
      String destCol = Serial.readStringUntil(',');
      String destRow = Serial.readStringUntil('\n');
-      
+
+
     delay(1000);
     String parameters = "source=ARDUINO&Request="+request+"&gameID="+gameID+"&numOfPlayers="+numOfPlayers+"&currentPlayerTurn="+currentPlayerTurn+"&sourceCol="+sourceCol+"&sourceRow="+sourceRow+"&destCol="+destCol+"&destRow="+destRow; // for multiple parameters, do var1=val1&var2=val2...
     if(request == "deleteGame" || request == "createGame" || request == "joinGame"){
@@ -132,7 +133,7 @@ void testPOST()
     client.println("Host: www.abugharbieh.com");
     client.print("Content-length:");
     client.println(parameters.length());
-    //client.println("Connection: Close");
+    client.println("Connection: Close");
     client.println("Content-Type: application/x-www-form-urlencoded;");
     client.println();
     client.println(parameters);
@@ -143,11 +144,25 @@ void testPOST()
     {
       if(client.available()){
         char str=client.read();
-        Serial.println(str);
+        Serial.print(str);
       }
     }
 
       if(!client.connected()){
+        Serial.println("Params received from ESP:");
+        Serial.print(request); //Request
+  Serial.print(',');
+  Serial.print(gameID);
+  Serial.print(",2,"); //numOfPlayers
+  Serial.print(currentPlayerTurn);
+  Serial.print(',');
+  Serial.print(sourceCol);
+  Serial.print(',');
+  Serial.print(sourceRow);
+  Serial.print(',');
+  Serial.print(destCol);
+  Serial.print(',');
+  Serial.print(destRow);
                   Serial.println("post disconnected the client");
                  isConnected = false;
   }
@@ -157,11 +172,12 @@ void testPOST()
 }
 
 void testGET(){
-    Serial.println("*");
+    Serial.print("*");
+    
      while(Serial.available() < 1){
         //Wait for get parameters
       }
-
+      
      
      String request = Serial.readStringUntil(',');
      String gameID = Serial.readStringUntil(',');
@@ -172,15 +188,21 @@ void testGET(){
      String destCol = Serial.readStringUntil(',');
      String destRow = Serial.readStringUntil('\n');
 
+    Serial.print("request:");
+    Serial.println(request);
+    Serial.print("gameID:");
+    Serial.println(gameID);
+    Serial.println("numOfPlayers:");
+    Serial.print(numOfPlayers);
      if (request == "getListOfGames"){
-  client.println("GET /test/GameLobby.php?Request="+request+"&gameID="+gameID+"&numOfPlayers="+numOfPlayers+"&currentPlayerTurn="+currentPlayerTurn+"&sourceCol="+sourceCol+"&sourceRow="+sourceRow+"&destCol="+destCol+"&destRow="+destRow+" HTTP/1.1");
+  client.println("GET /test/GameLobby.php?source=ARDUINO&Request="+request+"&gameID="+gameID+"&numOfPlayers="+numOfPlayers+"&currentPlayerTurn="+currentPlayerTurn+"&sourceCol="+sourceCol+"&sourceRow="+sourceRow+"&destCol="+destCol+"&destRow="+destRow+" HTTP/1.1");
      }
      else{
-      client.println("GET /test/GameStatus.php?Request="+request+"&gameID="+gameID+"&numOfPlayers="+numOfPlayers+"&currentPlayerTurn="+currentPlayerTurn+"&sourceCol="+sourceCol+"&sourceRow="+sourceRow+"&destCol="+destCol+"&destRow="+destRow+" HTTP/1.1");
+      client.println("GET /test/GameStatus.php?source=ARDUINO&Request="+request+"&gameID="+gameID+"&numOfPlayers="+numOfPlayers+"&currentPlayerTurn="+currentPlayerTurn+"&sourceCol="+sourceCol+"&sourceRow="+sourceRow+"&destCol="+destCol+"&destRow="+destRow+" HTTP/1.1");
      
      }
   client.println("Host: www.abugharbieh.com");
-  client.println("Connection: Close");
+   client.println("Connection: Close");
    client.println("Content-Type: application/x-www-form-urlencoded;");
    client.println();
    Serial.println("GET Request Sent.");
@@ -190,7 +212,7 @@ void testGET(){
     {
       if(client.available()){
         char str=client.read();
-        Serial.println(str);
+        Serial.print(str);
       }
     }
 
@@ -205,12 +227,13 @@ void testGET(){
 void scanNets(){
  //Serial.println("scan start");
   int n = WiFi.scanNetworks();
-  //Serial.println("scan done");
-  if (n == 0)
-    Serial.println("no networks found");
-  else
-  {
+   //Send a * to signal the arduino that we're about to start sending the wifi networks
     Serial.println("*");
+    //Send the number of wifi networks that were found
+    Serial.print(n);
+  if (n > 0){
+ 
+    Serial.print(',');
     for (int i = 0; i < n; ++i)
     {
       // Print SSID and RSSI for each network found
@@ -220,7 +243,11 @@ void scanNets(){
       }
     }
   }
+  //Signal arduino that list of networks is done
   Serial.println("*");
+
+  //Signal arduino that scan is complete
+  Serial.println("COMPLETE");
 
 }
 
@@ -252,7 +279,7 @@ void networkAndPassSelection(){
    memset(ssidSelection, 0, 50);
     memset(passSelection, 0, 50);
   //Send signal to wait for network id
-   Serial.println("*");
+   Serial.print("*");
   
        while(Serial.available() < 2){
         //Serial.println("inside the loop");
@@ -269,7 +296,7 @@ void networkAndPassSelection(){
    ssid = ssidSelection;
 
    //Send signal to wait for network password
-   Serial.println("*");
+   Serial.print("*");
      while(Serial.available() < 1){
         //Serial.println("inside the loop");
      
