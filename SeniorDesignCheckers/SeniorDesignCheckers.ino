@@ -40,6 +40,16 @@ enum ServerResponseType{
   GAME_STATUS
 };
 
+struct tempMovedPiece{
+  
+  int startXPos;
+  int destXPos;
+
+  //yPos won't be changing for temporarily moved pieces, so we can just store 1 yPos as a general one. 
+  int yPos;
+
+};
+
 //Game parameters to be sent to database when move is made
 int sourceCol = 0;
 int sourceRow = 0;
@@ -243,6 +253,58 @@ void moveZMagnet(int xPos, int yPos){
 //param destXPos: x tile position for the piece to be moved to
 //param destYPos: y tile position for the piece to be moved to
 void movePiece(int startXPos, int startYPos, int destXPos, int destYPos){
+  int xOffset = abs(startXPos - destXPos);
+  //if the xOffset is > 1, that means we are eating a piece, so we must move that piece to the dead zone before making our final move
+  //IF PIECE IS BEING EATEN
+  if(xOffset > 1)
+  {
+    //Victim is the piece that has been eaten
+    int xPosOfVictim = (startXPos + destXPos)/2;
+    int yPosOfVictim = (startYPos + destYPos)/2;
+
+    tempMovedPiece temporarilyMovedPieces[10];
+    int temporarilyMovedPiecesSize = 0;
+    
+    //Before moving our victim to the dead zone, move the pieces that are in the same column as the victim out of the way, so that we have a path
+    //to move our victim to the deadzone
+    for(int row = 0; row < yPosOfVictim; ++row){
+      if(gameTiles[xPosOfVictim][row] != -1){
+        if(xPosOfVictim < BOARD_WIDTH - 1)
+        {
+          //Move the piece to the tile to the right
+          movePiece(xPosOfVictim,row,xPosOfVictim + 1, row);
+          //Store the location of the temporarily moved piece so that we could move it back when we're done
+          temporarilyMovedPieces[temporarilyMovedPiecesSize].startXPos = xPosOfVictim;
+          temporarilyMovedPieces[temporarilyMovedPiecesSize].destXPos = xPosOfVictim + 1;
+          temporarilyMovedPieces[temporarilyMovedPiecesSize].yPos = row;
+          ++temporarilyMovedPiecesSize;
+          
+        } else
+        {
+          //Move the piece to the tile to the left
+          movePiece(xPosOfVictim,row,xPosOfVictim - 1, row);
+          //Store the location of the temporarily moved piece so that we could move it back when we're done
+          temporarilyMovedPieces[temporarilyMovedPiecesSize].startXPos = xPosOfVictim;
+          temporarilyMovedPieces[temporarilyMovedPiecesSize].destXPos = xPosOfVictim - 1;
+          temporarilyMovedPieces[temporarilyMovedPiecesSize].yPos = row;
+          ++temporarilyMovedPiecesSize;
+        }
+      }
+    } 
+
+    //Move the piece to the deadzone
+    moveZMagnet(xPosOfVictim,yPosOfVictim);
+    zMotor.raise();
+    //-1 is a row outside of the game board playable area, which is the deadzone
+    moveZMagnet(xPosOfVictim, -1);
+    zMotor.lower();
+
+    //Move the pieces that were temporarily moved back to their original location
+    for(int i = 0; i < temporarilyMovedPiecesSize; ++i){
+      movePiece(temporarilyMovedPieces[i].destXPos, temporarilyMovedPieces[i].yPos, temporarilyMovedPieces[i].startXPos, temporarilyMovedPieces[i].yPos);
+    }
+  } // END IF PIECE IS BEING EATEN
+  
   moveZMagnet(startXPos,startYPos);
   //Raise the zMotor to grab the piece
   zMotor.raise();
@@ -251,6 +313,10 @@ void movePiece(int startXPos, int startYPos, int destXPos, int destYPos){
 
   //Lower the motor to release hold of piece
   zMotor.lower();
+
+  //Update gameTiles status
+  gameTiles[destXPos][destYPos] = gameTiles[startXPos][startYPos];
+  gameTiles[startXPos][startYPos] = -1;
 }
 
 //Update the status of the previous game status to the current,
