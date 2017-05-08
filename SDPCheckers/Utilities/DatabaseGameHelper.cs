@@ -12,9 +12,8 @@ namespace SDPCheckers.Utilities
     {
         public static async Task<string> sendMove(int gameID, int numOfPlayers, GamePiece.Player currentPlayerTurn, int sourceCol, int sourceRow, int destCol, int destRow)
         {
-            //Database uses 0 for player 1, and 1 for player 2, so if it's player 1's turn, the next value for the next player should be updated to 1,
-            //and if it's player 2's turn, the value for the next player should be updated to 0;
-            string nextPlayer = currentPlayerTurn == GamePiece.Player.PLAYER1 ? "1" : "0";
+        
+            string nextPlayer = currentPlayerTurn == GamePiece.Player.PLAYER1 ? "2" : "1";
 
             using (var client = new HttpClient())
             {
