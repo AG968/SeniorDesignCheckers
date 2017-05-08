@@ -714,6 +714,7 @@ void loop() {
         else if(letter == 'd'){
           disconnectFromWifi();
         }else if (letter == 'g'){
+          gameID = 11;
           getGameStatus("0");
         }
         else if (letter == 's'){

@@ -108,7 +108,7 @@ namespace SDPCheckers.Pages
                     if(gameStatus.status == 1)
                     {
                         //If it became your turn
-                        GamePiece.Player statusPlayerTurn = gameStatus.currentPlayerTurn == 0 ? GamePiece.Player.PLAYER1 : GamePiece.Player.PLAYER2;
+                        GamePiece.Player statusPlayerTurn = gameStatus.currentPlayerTurn == 1 ? GamePiece.Player.PLAYER1 : GamePiece.Player.PLAYER2;
                         if(statusPlayerTurn == gamePlayer)
                         {
                             currentPlayerTurn = gamePlayer;
