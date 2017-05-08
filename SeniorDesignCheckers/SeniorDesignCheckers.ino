@@ -41,6 +41,7 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 #define YELLOW  0xFFE0
 #define WHITE   0xFFFF
 
+unsigned long timeSinceLastGET = 0;
 struct tempMovedPiece{
    
    int startXPos;
@@ -68,7 +69,7 @@ int currentXPos = 3;
 int currentYPos = 7;
 
 //Servo is flipped, so our max will be our min value
-const int MAX_Z_HEIGHT = 90;
+const int MAX_Z_HEIGHT = 85;
 const int MIN_Z_HEIGHT = 180;
 
 //Time it takes for stepper to step the distance of 1 tile in ms
@@ -76,13 +77,17 @@ const int STEPS_PER_TILE_X = 625;
 const int STEPS_PER_TILE_Y = 550;
 
 //Motor step and direction pins (stepper motors)
-const int xMotorStepPin = 0;
-const int xMotorDirectionPin = 0;
-const int xMotorSleepPin = 0;
+const int xMotorSleepPin = 2;
+const int xMotorStepPin = 3;
+const int xMotorDirectionPin = 4;
 
-const int yMotorStepPin = 0;
-const int yMotorDirectionPin = 0;
-const int yMotorSleepPin = 0;
+
+
+const int yMotorSleepPin = 5;
+const int yMotorStepPin = 6;
+const int yMotorDirectionPin = 7;
+
+
 
 enum stepperDirection{
   LEFT = 0,
@@ -110,7 +115,13 @@ int gameStatus = 1;
 //-1 for empty tiles 
 int currentGameTileStatus[4][8] = {{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1}};
 int previousGameTileStatus[4][8] = {{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1,-1,-1}};
-int gameTiles[4][8] = {{-1,1,-1,-1,-1,-1,-1,2},{1,-1,-1,-1,-1,-1,2,-1},{-1,1,-1,-1,-1,-1,-1,2},{1,-1,-1,-1,-1,-1,2,-1}};
+int gameTiles[4][8] = 
+{
+  {-1,1,-1,-1,-1,2,-1,2},
+  {1,-1,1,-1,-1,-1,2,-1},
+  {-1,1,-1,-1,-1,2,-1,2},
+  {1,-1,1,-1,-1,-1,2,-1}
+  };
 
 //TFTparameters
 String currentPage = "main menu";
@@ -123,6 +134,7 @@ String text = "";
 int gameListSize = 0;
 int wifiListSize = 0;
 String ssidText = "";
+bool valid = true;
 
 
 class zMotor{
@@ -172,21 +184,21 @@ zMotor zMotor;
 //and columns starting from the bottom left corner from the perspective of
 //player 1
 const int switch10 = 50;
-const int switch30 = 42;
-const int switch01 = 40;
-const int switch21 = 52;
-const int switch12 = 43;
-const int switch32 = 48;
-const int switch03 = 38;
-const int switch23 = 39;
-const int switch14 = 35;
-const int switch34 = 46;
-const int switch05 = 34;
-const int switch25 = 41;
-const int switch16 = 45;
-const int switch36 = 44;
-const int switch07 = 36;
-const int switch27 = 37;
+const int switch30 = 48;
+const int switch01 = 45;
+const int switch21 = 41;
+const int switch12 = 38;
+const int switch32 = 53;
+const int switch03 = 52;
+const int switch23 = 44;
+const int switch14 = 51; //34-46 48,50,52
+const int switch34 = 39;
+const int switch05 = 43;
+const int switch25 = 46;
+const int switch16 = 40;
+const int switch36 = 49;
+const int switch07 = 42;
+const int switch27 = 47;
 
 
 //Set up the motors' step and direction pins
@@ -217,6 +229,7 @@ void setupReedSwitchPins(){
   pinMode(switch36,INPUT_PULLUP);
   pinMode(switch07,INPUT_PULLUP);
   pinMode(switch27,INPUT_PULLUP);
+  delay(1000);
 }
 
 //Resets the position of the magnet back to the bottom left corner
@@ -366,9 +379,13 @@ void moveZMagnet(int xPos, int yPos){
    //Raise the zMotor to grab the piece
    zMotor.raise();
    moveZMagnet(destXPos,destYPos);
+
+   
  
    //Lower the motor to release hold of piece
    zMotor.lower();
+
+   moveZMagnet(3,7);
  
    //Update gameTiles status
    gameTiles[destXPos][destYPos] = gameTiles[startXPos][startYPos];
@@ -400,7 +417,7 @@ void transferGameTileStatus(){
 //Reads the digital pins to get the state of the game
 //and updates the previousGameTileStatus and currentGameTileStatus.
 void getGameTileStatus(){
-  transferGameTileStatus();
+  //transferGameTileStatus();
   
   currentGameTileStatus[1][0] = digitalRead(switch10);
   currentGameTileStatus[3][0] = digitalRead(switch30);
@@ -418,11 +435,45 @@ void getGameTileStatus(){
   currentGameTileStatus[3][6] = digitalRead(switch36);
   currentGameTileStatus[0][7] = digitalRead(switch07);
   currentGameTileStatus[2][7] = digitalRead(switch27);
+
+    for (int column = 0; column < BOARD_WIDTH; ++column){
+    for (int row = 0; row < BOARD_HEIGHT; ++row){
+      Serial.print("Current ");
+      Serial.print(column);
+      Serial.print(row);
+      Serial.print(" : ");
+      Serial.println(currentGameTileStatus[column][row]);
+      Serial.print("previous ");
+      Serial.print(column);
+      Serial.print(row);
+      Serial.print(" : ");
+      Serial.println(previousGameTileStatus[column][row]);
+      
+    }
+  }
 }
 
 //////////////WEB POST/GET SECTION
 ///Checks to see which move the player made, and posts that move to the game server
 void endPlayerTurn(){
+  getGameTileStatus(); 
+  /*
+  for (int column = 0; column < BOARD_WIDTH; ++column){
+    for (int row = 0; row < BOARD_HEIGHT; ++row){
+      Serial.print("Current ");
+      Serial.print(column);
+      Serial.print(row);
+      Serial.print(" : ");
+      Serial.println(currentGameTileStatus[column][row]);
+      Serial.print("previous ");
+      Serial.print(column);
+      Serial.print(row);
+      Serial.print(" : ");
+      Serial.println(previousGameTileStatus[column][row]);
+      
+    }
+  }
+  */
   //Find which piece moved
   for (int column = 0; column < BOARD_WIDTH; ++column){
     for (int row = 0; row < BOARD_HEIGHT; ++row){
@@ -452,7 +503,39 @@ void endPlayerTurn(){
     }
   }
 
-  postToGameServer("0");
+  if((sourceCol == 0 && sourceRow == 0) || (destCol == 0 && destRow == 0)){
+    valid = false;
+    Serial.print("Source col:");
+  Serial.println(sourceCol);
+    Serial.print("Source Row:");
+  Serial.println(sourceRow);
+    Serial.print("Dest col:");
+  Serial.println(destCol);
+    Serial.print("Dest row:");
+  Serial.println(destRow);
+    Serial.println("NOT A VALID MOVE");
+
+  }
+  else
+  {
+    
+  Serial.print("Source col:");
+  Serial.println(sourceCol);
+    Serial.print("Source Row:");
+  Serial.println(sourceRow);
+    Serial.print("Dest col:");
+  Serial.println(destCol);
+    Serial.print("Dest row:");
+  Serial.println(destRow);
+    valid = true;
+    transferGameTileStatus();
+    postToGameServer("0");
+  }
+  
+    destCol = 0;
+    destRow = 0;
+    sourceCol = 0;
+    sourceRow = 0;
 }
 
 //Sends a GET requeset to HTTP Client to get the status of the game
@@ -506,7 +589,50 @@ Serial.println ("Sending g");
   }
 
  }
+void initialPage(){
 
+  tft.fillScreen(BLACK);
+  tft.setCursor(20, 5);
+  tft.println("Please reset the following pieces");
+  if(currentGameTileStatus[0][1] == 1){
+        tft.setCursor(60, 20);
+        tft.println("Column: 0, Row: 1");
+  }
+  if(currentGameTileStatus[1][0] == 1){
+    tft.setCursor(60, 35);
+  tft.println("Column: 1, Row: 0");
+  }if(currentGameTileStatus[1][2] == 1){
+    tft.setCursor(60, 50);
+  tft.println("Column: 1, Row: 2");
+  }if(currentGameTileStatus[2][1] == 1){
+        tft.setCursor(60, 65);
+  tft.println("Column: 2, Row: 1");
+  }if(currentGameTileStatus[3][0] == 1){
+        tft.setCursor(60, 80);
+  tft.println("Column: 3, Row: 0");
+  }if(currentGameTileStatus[3][2] == 1){
+    tft.setCursor(60, 95);
+  tft.println("Column: 3, Row: 2");
+  }
+  
+}
+bool checkInitialTileStatus(){
+  getGameTileStatus();
+  while(
+      currentGameTileStatus[0][1] == 1 ||
+      currentGameTileStatus[1][0] == 1 ||
+      currentGameTileStatus[1][2] == 1 ||
+      currentGameTileStatus[2][1] == 1 ||
+      currentGameTileStatus[3][0] == 1 ||
+      currentGameTileStatus[3][2] == 1
+    ){
+      //display something
+      initialPage();
+      getGameTileStatus();
+    }
+    transferGameTileStatus();
+
+}
 
 //Takes in a request (either "createGame", "joinGame", "deleteGame", or "0");
 //"0" means it will post the game status of the current gameID to the server.
@@ -573,6 +699,12 @@ void parseServerResponse(String response, ServerResponseType type){
   {
     case GAME_STATUS:
       parseGameStatusResponse(response);
+      if(currentPage == "your move page"){
+        sourceCol = 0;
+        sourceRow = 0;
+        destCol = 0;
+        destRow = 0;
+      }
       break;
     case LIST_OF_GAMES:
       parseListOfGamesResponse(response);
@@ -794,13 +926,8 @@ unsigned long createButton(int text, int x, int y, int w, int h, int btnColor, i
   tft.setTextSize(1.5);
   tft.setTextColor(WHITE);
   tft.setCursor(60, 100);  
-  tft.println("Waiting for opponent.");
-  delay(700);
-  tft.setCursor(60, 100);
-  tft.println("Waiting for opponent..");
-  delay(700);
-  tft.setCursor(60, 100);
   tft.println("Waiting for opponent...");
+
 }
 void connectingPage(){
     currentPage = "connecting page";
@@ -811,12 +938,6 @@ void connectingPage(){
   tft.setTextSize(1.5);
   tft.setTextColor(WHITE);
   tft.setCursor(60, 100);  
-  tft.println("Connecting to wifi.");
-  delay(700);
-  tft.setCursor(60, 100);
-  tft.println("Connecting to wifi..");
-  delay(700);
-  tft.setCursor(60, 100);
   tft.println("Connecting to wifi...");
 }
 void lookingForWifiPage(){
@@ -854,13 +975,8 @@ void disconnectedPage(){
   tft.println("Disconnected from the game server.");
   tft.setTextColor(WHITE);
   tft.setCursor(60, 100);  
-  tft.println("redirecting to Main Menu.");
-  delay(700);
-  tft.setCursor(60, 100);
-  tft.println("redirecting to Main Menu..");
-  delay(700);
-  tft.setCursor(60, 100);
   tft.println("redirecting to Main Menu...");
+
 }
 //create main menu
 void mainMenu(){
@@ -966,23 +1082,21 @@ void mainMenu(){
         currentPage = "your move page";
        tft.fillScreen(BLACK);
 
-        
+   if(!valid){
+    tft.setCursor(60, 60);
+    tft.println("INVALID MOVE");
+    }      
   tft.setTextSize(1.5);
   tft.setTextColor(WHITE);
   tft.setCursor(60, 20);
   tft.print("You are in game: ");
   tft.println(gameID);
   tft.setCursor(60, 100);  
-  tft.println("Your move.");
-  delay(700);
-  tft.setCursor(60, 100);
-  tft.println("Your move..");
-  delay(700);
-  tft.setCursor(60, 100);
   tft.println("Your move...");
-       createButton("Quit",0,280,80,40, BLUE, WHITE, 1);
+
+  createButton("Quit",0,280,80,40, BLUE, WHITE, 1);
  
-       createButton("Done",160,280,80,40, BLUE, WHITE, 1);
+  createButton("Done",160,280,80,40, BLUE, WHITE, 1);
 
        
   }
@@ -992,20 +1106,12 @@ void mainMenu(){
     currentPage = "opponent move page";
     tft.fillScreen(BLACK);
     createButton("Quit",80,280,80,40, BLUE, WHITE, 1);
-
+   
      tft.setTextColor(WHITE);
   tft.setTextSize(1.5);
   tft.setTextColor(WHITE);
   tft.setCursor(60, 100);  
-  tft.println("opponent move.");
-  delay(700);
-  tft.setCursor(60, 100);
-  tft.println("opponent move..");
-  delay(700);
-  tft.setCursor(60, 100);
   tft.println("opponent move...");
-
-
 
   }
 
@@ -1109,15 +1215,18 @@ void passwordPage(){
       }
     }
         gameTiles[0][1] = 1;
-        gameTiles[0][7] = 2;
+        gameTiles[1][2] = 1;
         gameTiles[1][0] = 1;
-        gameTiles[1][6] = 2;
         gameTiles[2][1] = 1;
-        gameTiles[2][7] = 2;
         gameTiles[3][0] = 1;
+        gameTiles[3][2] = 1;
+        
+        gameTiles[0][7] = 2;
+        gameTiles[0][5] = 2;
+        gameTiles[1][6] = 2;
+        gameTiles[2][5] = 2;
+        gameTiles[2][7] = 2;
         gameTiles[3][6] = 2;
-        
-        
   }
 
 
@@ -1126,12 +1235,17 @@ void setup() {
   setupReedSwitchPins();
   memset(games,0,sizeof(games));
   //memset(ssid,'n',sizeof(ssid));
-  
+
   Serial.begin(115200);
 
   //ESP8266 serial
   Serial1.begin(115200);
 
+  //init tiles for game
+  transferGameTileStatus();
+  getGameTileStatus();
+  transferGameTileStatus();
+  getGameTileStatus();
 
 
 
@@ -1182,6 +1296,20 @@ void setup() {
 #define MAXPRESSURE 1000
 
 void loop() {
+  int x = 3;
+  int y = 7;
+
+  while(Serial.available() == 0){
+    
+  }
+  
+    x= Serial.read();
+    y = Serial.read();
+  
+  Serial.print(x);
+  Serial.print(",");
+  Serial.println(y);
+  /*
    digitalWrite(13, HIGH);
   TSPoint p = ts.getPoint();
   digitalWrite(13, LOW);
@@ -1193,10 +1321,16 @@ void loop() {
   pinMode(YP, OUTPUT);
   pinMode(YM, OUTPUT);
 
-if(gameID != 0 && p.z < MINPRESSURE){
+if(gameID != 0 
+  && p.z < MINPRESSURE 
+  && (currentPage == "waiting page" || currentPage == "opponent move page")
+  && (((unsigned long)millis() - timeSinceLastGET) > 3000)){
   Serial.print("Game ID is:");
+  Serial.print("Time since last get:");
+  Serial.println((unsigned long)millis()-timeSinceLastGET);
   Serial.println(gameID);
  getGameStatus("0");
+ timeSinceLastGET = millis();
 }
  if(gameStatus == -1 && gameID != 0){
   disconnectedPage();
@@ -1208,6 +1342,10 @@ if(gameID != 0 && p.z < MINPRESSURE){
  if(gamePlayer  == currentPlayerTurn && currentPage == "opponent move page"){
  
   movePiece(sourceCol, sourceRow, destCol, destRow); //update game tiles array
+  sourceCol = 0;
+  sourceRow = 0;
+  destCol = 0;
+  destRow = 0;
   yourMovePage();
  }
  //If you're on the waiting page and someone joins your game
@@ -1233,6 +1371,7 @@ if(gameID != 0 && p.z < MINPRESSURE){
         //main menu button
       if(p.y > 280 && p.y < 320){
         postToGameServer("deleteGame");
+        reset();
         gameID = 0;
         mainMenu();
       }
@@ -1242,7 +1381,12 @@ if(gameID != 0 && p.z < MINPRESSURE){
       if(p.x > 160 && p.x < 240){
             if(p.y > 280 && p.y < 320){
             endPlayerTurn();  
-            opponentMovePage();
+            if(valid){
+              opponentMovePage();
+            }
+            else{
+              yourMovePage(); 
+            }
             }
             }
       else  if(p.x > 0 && p.x < 80){
@@ -1270,8 +1414,10 @@ if(gameID != 0 && p.z < MINPRESSURE){
         }
         //create game button
         else if(p.y > 220 && p.y < 280){
+          checkInitialTileStatus();
           postToGameServer("createGame");
-          reset();
+          //reset();
+          
           gamePlayer = 1; 
           waitingPage();
         }
@@ -1283,6 +1429,7 @@ if(gameID != 0 && p.z < MINPRESSURE){
         if(p.y > 40 && p.y < 80){
       
           gameID = games[gameTracker-6];
+          checkInitialTileStatus();
           postToGameServer("joinGame");
           gamePlayer = 2;
           opponentMovePage();
@@ -1291,6 +1438,7 @@ if(gameID != 0 && p.z < MINPRESSURE){
         else if(p.y > 120 && p.y < 160){
          
           gameID = games[gameTracker-4];
+          checkInitialTileStatus();
           postToGameServer("joinGame");
           gamePlayer = 2;
           opponentMovePage();
@@ -1299,6 +1447,8 @@ if(gameID != 0 && p.z < MINPRESSURE){
         else if(p.y > 200 && p.y < 240){
           
           gameID = games[gameTracker-2];
+          
+          checkInitialTileStatus();
            postToGameServer("joinGame");
            gamePlayer = 2;
           opponentMovePage();
@@ -1309,6 +1459,8 @@ if(gameID != 0 && p.z < MINPRESSURE){
         if(p.y > 40 && p.y < 80){
          
           gameID = games[gameTracker-5];
+          
+          checkInitialTileStatus();
            postToGameServer("joinGame");
            gamePlayer = 2;
           opponentMovePage();
@@ -1317,6 +1469,8 @@ if(gameID != 0 && p.z < MINPRESSURE){
         else if(p.y > 120 && p.y < 160){
           
           gameID = games[gameTracker-3];
+          
+          checkInitialTileStatus();
           postToGameServer("joinGame");
           gamePlayer = 2;
           opponentMovePage();
@@ -1325,6 +1479,8 @@ if(gameID != 0 && p.z < MINPRESSURE){
         else if(p.y > 200 && p.y < 240){
           
           gameID = games[gameTracker-1];
+          
+          checkInitialTileStatus();
           postToGameServer("joinGame");
           gamePlayer = 2;
           opponentMovePage();
@@ -1940,7 +2096,7 @@ if(gameID != 0 && p.z < MINPRESSURE){
       }
     }
   }
-  
+  */
 }
 
 

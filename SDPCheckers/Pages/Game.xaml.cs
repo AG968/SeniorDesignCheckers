@@ -452,8 +452,13 @@ namespace SDPCheckers.Pages
         {
             Image piece = sender as Image;
             string[] position = piece.Uid.Split(',');
-
-            return boardTiles[Convert.ToInt32(position[0]), Convert.ToInt32(position[1])].tilePiece.player == gamePlayer;
+            try
+            {
+                return boardTiles[Convert.ToInt32(position[0]), Convert.ToInt32(position[1])].tilePiece.player == gamePlayer;
+            }catch
+            {
+                return false;
+            }
             
         }
 
