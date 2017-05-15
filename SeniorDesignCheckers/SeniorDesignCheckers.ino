@@ -40,7 +40,7 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 #define MAGENTA 0xF81F
 #define YELLOW  0xFFE0
 #define WHITE   0xFFFF
-
+#define MOTOR_DELAY 600
 unsigned long timeSinceLastGET = 0;
 struct tempMovedPiece{
    
@@ -69,7 +69,7 @@ int currentXPos = 3;
 int currentYPos = 7;
 
 //Servo is flipped, so our max will be our min value
-const int MAX_Z_HEIGHT = 85;
+const int MAX_Z_HEIGHT = 45;
 const int MIN_Z_HEIGHT = 180;
 
 //Time it takes for stepper to step the distance of 1 tile in ms
@@ -277,14 +277,14 @@ void moveZMagnet(int xPos, int yPos){
           digitalWrite(yMotorStepPin,HIGH);
         }
         
-        delayMicroseconds(400);
+        delayMicroseconds(MOTOR_DELAY);
         
         digitalWrite(xMotorStepPin,LOW);
         if(steps < yOffset * STEPS_PER_TILE_Y){
           digitalWrite(yMotorStepPin,LOW);
         }
         
-        delayMicroseconds(400);
+        delayMicroseconds(MOTOR_DELAY);
       }
   
   }else{
@@ -296,14 +296,14 @@ void moveZMagnet(int xPos, int yPos){
           digitalWrite(xMotorStepPin,HIGH);
         }
         
-        delayMicroseconds(400);
+        delayMicroseconds(MOTOR_DELAY);
         
         digitalWrite(yMotorStepPin,LOW);
         if(steps < xOffset * STEPS_PER_TILE_X){
           digitalWrite(xMotorStepPin,LOW);
         }
         
-        delayMicroseconds(400);
+        delayMicroseconds(MOTOR_DELAY);
       }
   }
   
@@ -322,11 +322,11 @@ void moveZMagnet(int xPos, int yPos){
 //param startYPos: initial y tile position of the piece to be moved
 //param destXPos: x tile position for the piece to be moved to
 //param destYPos: y tile position for the piece to be moved to
- void movePiece(int startXPos, int startYPos, int destXPos, int destYPos){
+ void movePiece(int startXPos, int startYPos, int destXPos, int destYPos,bool isTempMove){
    int xOffset = abs(startXPos - destXPos);
    //if the xOffset is > 1, that means we are eating a piece, so we must move that piece to the dead zone before making our final move
    //IF PIECE IS BEING EATEN
-   if(xOffset > 1)
+   if(xOffset > 1 && !isTempMove)
    {
      //Victim is the piece that has been eaten
      int xPosOfVictim = (startXPos + destXPos)/2;
@@ -342,7 +342,7 @@ void moveZMagnet(int xPos, int yPos){
          if(xPosOfVictim < BOARD_WIDTH - 1)
          {
            //Move the piece to the tile to the right
-           movePiece(xPosOfVictim,row,xPosOfVictim + 1, row);
+           movePiece(xPosOfVictim,row,xPosOfVictim + 1, row, true);
            //Store the location of the temporarily moved piece so that we could move it back when we're done
            temporarilyMovedPieces[temporarilyMovedPiecesSize].startXPos = xPosOfVictim;
            temporarilyMovedPieces[temporarilyMovedPiecesSize].destXPos = xPosOfVictim + 1;
@@ -352,7 +352,7 @@ void moveZMagnet(int xPos, int yPos){
          } else
          {
            //Move the piece to the tile to the left
-           movePiece(xPosOfVictim,row,xPosOfVictim - 1, row);
+           movePiece(xPosOfVictim,row,xPosOfVictim - 1, row, true);
            //Store the location of the temporarily moved piece so that we could move it back when we're done
            temporarilyMovedPieces[temporarilyMovedPiecesSize].startXPos = xPosOfVictim;
            temporarilyMovedPieces[temporarilyMovedPiecesSize].destXPos = xPosOfVictim - 1;
@@ -365,15 +365,16 @@ void moveZMagnet(int xPos, int yPos){
      //Move the piece to the deadzone
      moveZMagnet(xPosOfVictim,yPosOfVictim);
      zMotor.raise();
-     //-1 is a row outside of the game board playable area, which is the deadzone
+     //-2 is a row outside of the game board playable area, which is the deadzone
      moveZMagnet(xPosOfVictim, -1);
      zMotor.lower();
  
      //Move the pieces that were temporarily moved back to their original location
      for(int i = 0; i < temporarilyMovedPiecesSize; ++i){
-       movePiece(temporarilyMovedPieces[i].destXPos, temporarilyMovedPieces[i].yPos, temporarilyMovedPieces[i].startXPos, temporarilyMovedPieces[i].yPos);
+       movePiece(temporarilyMovedPieces[i].destXPos, temporarilyMovedPieces[i].yPos, temporarilyMovedPieces[i].startXPos, temporarilyMovedPieces[i].yPos, true);
      }
    } // END IF PIECE IS BEING EATEN
+
    
    moveZMagnet(startXPos,startYPos);
    //Raise the zMotor to grab the piece
@@ -385,11 +386,17 @@ void moveZMagnet(int xPos, int yPos){
    //Lower the motor to release hold of piece
    zMotor.lower();
 
-   moveZMagnet(3,7);
+    //If the recursive call is not in the middle of moving pieces out of the way to demonstrate
+    //an eaten piece, (in other words, we just did our originally intended move, then move back to the origin)
+   if(!isTempMove){
+      moveZMagnet(3,7);
+      validateMoveMade(destXPos,destYPos);
+      //Update gameTiles status
+      gameTiles[destXPos][destYPos] = gamePlayer == 1 ? 2 : 1;//gameTiles[startXPos][startYPos];
+      gameTiles[startXPos][startYPos] = -1;
+   }
  
-   //Update gameTiles status
-   gameTiles[destXPos][destYPos] = gameTiles[startXPos][startYPos];
-   gameTiles[startXPos][startYPos] = -1;
+
   }
 
 //Update the status of the previous game status to the current,
@@ -527,6 +534,9 @@ void endPlayerTurn(){
   Serial.println(destCol);
     Serial.print("Dest row:");
   Serial.println(destRow);
+
+  gameTiles[destCol][destRow] = gameTiles[sourceCol][sourceRow];
+  gameTiles[sourceCol][sourceRow] = -1;
     valid = true;
     transferGameTileStatus();
     postToGameServer("0");
@@ -614,8 +624,43 @@ void initialPage(){
     tft.setCursor(60, 95);
   tft.println("Column: 3, Row: 2");
   }
+
+  if(currentGameTileStatus[0][5] == 1){
+    tft.setCursor(60, 110);
+  tft.println("Column: 0, Row: 5");
+  }
+  if(currentGameTileStatus[2][5] == 1){
+    tft.setCursor(60, 125);
+  tft.println("Column: 2, Row: 5");
+  }
+  
   
 }
+
+void validateMovePage(int x, int y){
+
+  tft.fillScreen(BLACK);
+  tft.setCursor(20, 5);
+  tft.println("Please adjust the position of following piece(s)");
+  
+  tft.setCursor(60, 20);
+  tft.print("Column: ");
+  tft.print(x);
+  tft.print(", Row: ");
+  tft.println(y);
+  
+}
+
+void validateMoveMade(int xPos, int yPos){
+  getGameTileStatus();
+  while(currentGameTileStatus[xPos][yPos] == 1){
+    validateMovePage(xPos,yPos);
+    getGameTileStatus();
+  }
+  transferGameTileStatus();
+
+}
+
 bool checkInitialTileStatus(){
   getGameTileStatus();
   while(
@@ -624,7 +669,11 @@ bool checkInitialTileStatus(){
       currentGameTileStatus[1][2] == 1 ||
       currentGameTileStatus[2][1] == 1 ||
       currentGameTileStatus[3][0] == 1 ||
-      currentGameTileStatus[3][2] == 1
+      currentGameTileStatus[3][2] == 1 ||
+      
+      currentGameTileStatus[0][5] == 1 || //player 2 front most 2 tiles
+      currentGameTileStatus[2][5] == 1
+      
     ){
       //display something
       initialPage();
@@ -1296,20 +1345,30 @@ void setup() {
 #define MAXPRESSURE 1000
 
 void loop() {
+  
+
+  /*
   int x = 3;
   int y = 7;
 
-  while(Serial.available() == 0){
+  while(Serial.available() < 2){
     
   }
   
-    x= Serial.read();
-    y = Serial.read();
+    x= Serial.readStringUntil(',').toInt();
+    y = Serial.readStringUntil(',').toInt();
   
   Serial.print(x);
   Serial.print(",");
   Serial.println(y);
-  /*
+
+  moveZMagnet(x,y);
+  zMotor.raise();
+  moveZMagnet(1,-1);
+  zMotor.lower();
+  moveZMagnet(3,7);
+*/
+
    digitalWrite(13, HIGH);
   TSPoint p = ts.getPoint();
   digitalWrite(13, LOW);
@@ -1341,7 +1400,7 @@ if(gameID != 0
  //If you're waiting for an opponent move and they just made a move
  if(gamePlayer  == currentPlayerTurn && currentPage == "opponent move page"){
  
-  movePiece(sourceCol, sourceRow, destCol, destRow); //update game tiles array
+  movePiece(sourceCol, sourceRow, destCol, destRow,false); //update game tiles array
   sourceCol = 0;
   sourceRow = 0;
   destCol = 0;
@@ -2096,7 +2155,7 @@ if(gameID != 0
       }
     }
   }
-  */
+  
 }
 
 
