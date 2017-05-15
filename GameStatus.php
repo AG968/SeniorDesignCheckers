@@ -26,6 +26,7 @@
 	
 		//Make sure all required POST parameters have been passed
 		if( isset(
+			$_POST['source'],
 			$_POST['gameID'], 
 			$_POST['numOfPlayers'], 
 			$_POST['currentPlayerTurn'],
@@ -56,8 +57,11 @@
 		        	// Execute SQL statement
 		      		$result = mysqli_query($conn,$sql); 
 		      		$row = $result->fetch_array(); 
-		      		
-		  		$gameStatusString = 
+
+
+		      		if($_POST['source'] == "PC")
+		      		{
+		      			$gameStatusString = 
 		  			"{
 		  				status: 1,
 		  				gameID : '".$_POST['gameID']."',
@@ -68,8 +72,12 @@
 		  				destCol: '".$_POST['destCol']."',
 		  				destRow: '".$_POST['destRow']."'
 		  			 }";
-		  			
-				echo $gameStatusString;   
+		  		}else
+		  		{
+		  			$gameStatusString = "{1," .$_POST['gameID']. "," . $_POST['numOfPlayers'] . "," . $_POST['currentPlayerTurn'] . "," . $_POST['sourceCol'] . "," . $_POST['sourceRow'] . "," . $_POST['destCol'] . "," . $_POST['destRow'] . "}";
+		  		}
+				echo $gameStatusString;
+		      		  
 			} 
 			else 
 			{
@@ -97,7 +105,7 @@
 	//GET Request handler 
 	elseif($_SERVER['REQUEST_METHOD'] === 'GET')
         {
-        	if(isset($_GET['gameID']))
+        	if(isset($_GET['gameID'], $_GET['source']))
         	{
         	
 	        	$sql = "SELECT * FROM  `Games` WHERE  `gameID` = '".$_GET['gameID']."'";
@@ -108,33 +116,47 @@
 	  		//if invalid gameID
 	  		if($row['gameID'] == "" )
 	  		{
-	  			$gameStatusString = 
-  				"{
-	  				status: -1,
-	  				gameID : 0,
-	  				numOfPlayers : 0,
-	  				currentPlayerTurn: 0,
-	  				sourceCol: 0,
-	  				sourceRow: 0,
-	  				destCol: 0,
-	  				destRow: 0
-	  			 }";
+	  			if($_GET['source'] == "PC")
+	  			{
+		  			$gameStatusString = 
+	  				"{
+		  				status: -1,
+		  				gameID : 0,
+		  				numOfPlayers : 0,
+		  				currentPlayerTurn: 0,
+		  				sourceCol: 0,
+		  				sourceRow: 0,
+		  				destCol: 0,
+		  				destRow: 0
+		  			 }";
+	  			}else
+	  			{
+	  				$gameStatusString = "{-1,0,0,0,0,0,0,0}";
+	  			}
+	  			
   			
 			echo $gameStatusString;
 	  		}
 	  		else
 	  		{
-		  		$gameStatusString = 
-	  			"{
-	  				status: 1,
-	  				gameID : '".$row['gameID']."',
-	  				numOfPlayers : '".$row['numOfPlayers']."',
-	  				currentPlayerTurn: '".$row['currentPlayerTurn']."',
-	  				sourceCol: '".$row['sourceCol']."',
-	  				sourceRow: '".$row['sourceRow']."',
-	  				destCol: '".$row['destCol']."',
-	  				destRow: '".$row['destRow']."'
-	  			 }";
+	  			if($_GET['source'] == "PC")
+	  			{
+		  			$gameStatusString = 
+		  			"{
+		  				status: 1,
+		  				gameID : '".$row['gameID']."',
+		  				numOfPlayers : '".$row['numOfPlayers']."',
+		  				currentPlayerTurn: '".$row['currentPlayerTurn']."',
+		  				sourceCol: '".$row['sourceCol']."',
+		  				sourceRow: '".$row['sourceRow']."',
+		  				destCol: '".$row['destCol']."',
+		  				destRow: '".$row['destRow']."'
+		  			 }";
+	  			}else
+	  			{
+	  				$gameStatusString = "{1," .$row['gameID']. "," . $row['numOfPlayers'] . "," . $row['currentPlayerTurn'] . "," . $row['sourceCol'] . "," . $row['sourceRow'] . "," . $row['destCol'] . "," . $row['destRow'] . "}";
+	  			}
+		  	
 	  			
 				echo $gameStatusString;   
 			}

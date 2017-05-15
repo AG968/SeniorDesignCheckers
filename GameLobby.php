@@ -1,6 +1,5 @@
 <?php
 	// Prepare variables for database connection
-	
 	$dbusername = "AG968";  // enter database username
 	$dbpassword = "mahmoudag";  // enter database password
 	$server = "www.abugharbieh.com"; 
@@ -18,11 +17,16 @@
 	//GET Request handler 
 	if($_SERVER['REQUEST_METHOD'] === 'GET')
         {
-        	if(isset($_GET['Request']))
+        	if(isset(
+        		$_GET['Request'], 
+        		$_GET['source']
+        		)
+        	  )
         	{
+			//Get the list of games
         		if($_GET['Request'] == "getListOfGames")
         		{
-        			$sql = "SELECT `gameID`,`numOfPlayers` FROM  `Games`";
+        			$sql = "SELECT `gameID`,`numOfPlayers` FROM  `Games` where `numOfPlayers` = 1";
 		        	// Execute SQL statement
 		      		$result = mysqli_query($conn,$sql); 
 		      		$rows = array();
@@ -31,23 +35,50 @@
 		      			array_push($rows,$row); 
 		      		}
 		      		
-		      		echo json_encode($rows); 
+		      		if($_GET['source'] == "PC")
+		      		{
+		      			echo json_encode($rows); 
+		      		}
+		      		else
+		      		{
+		      		//If the source is the arduino, return a string in the format : {numOfGames,gameId1,gameId2,gameIdN}
+		      		  	$response = "{" . count($rows) . ",";
+		      		  	for($game = 0; $game < count($rows); ++$game)
+		      		  	{	
+		      		  		$response = $response . $rows[$game]['gameID'];
+		      		  		if($game != count($rows) - 1)
+		      		  		{
+		      		  			$response = $response . ",";
+		      		  		}
+		      		  	}
+		      		  	$response = $response . "}";
+		      		  	echo $response;
+		      		}
+		      		
         		}
+        		
         		else{
-        			echo "no get request";
+				echo 
+		  			"{
+		  				status: -1
+		  			 }";
         		}
 	        	  
 		} 
 		else
 		{
 			
-			echo "test";
+			echo 
+				"{
+					status: -1
+				}";
 		}       
        }
         elseif($_SERVER['REQUEST_METHOD'] === 'POST')
         {
-        	if(isset($_POST['Request']))
+        	if(isset($_POST['Request'], $_POST['source']))
         	{
+        		//Create a game with the next valid gameID
         		if($_POST['Request'] == "createGame")
         		{
         			//Get max Game ID
@@ -58,15 +89,33 @@
 		
 				$gameID = $row['gameID'] + 1;
 				
+				//Query to add game to DB with new gameID
 		  		$sql = "INSERT INTO Games (`gameID`, `numOfPlayers`, `currentPlayerTurn`, `sourceCol`, `sourceRow`, `destCol`, `destRow`) 
-		  		VALUES ('".$gameID."', '1', '0', '0', '0', '0', '0')";
+		  		VALUES ('".$gameID."', '1', '1', '0', '0', '0', '0')";
+		  		
 		  		
 		  		if ($conn->query($sql) === TRUE) 
 		  		{		  		
-		  			//Return max gameID
-					echo $gameID;
+		  			//Return max gameID and positive status
+		  			if($_POST['source']  == "PC")
+		  			{
+		  			
+						echo 
+							"{
+								status: 1,
+								gameID: '".$gameID."'
+							}";
+					}
+					else
+					{
+						echo "{1," . $gameID . ",1,0,0,0,0,0}";
+					
+					}
 				} else {
-				    echo "Error: " . $sql . "<br>" . $conn->error;
+				    	echo 
+						"{
+							status: -1
+						}";
 				}
 				
         		}
@@ -75,7 +124,15 @@
         			$sql = "DELETE FROM Games WHERE gameID = '".$_POST['gameID']."'";
         			if($conn->query($sql) === TRUE)
         			{
-        				echo "Game Deleted";
+        				if($_POST['source'] == "PC"){
+        				
+        					echo "Game Deleted";
+        				}
+        				else
+        				{
+        				//all we are about is status being 1 to know that the game was deleted. the return parameters are status,gameID,numOfPlayers,currentPlayerTurn,sourceCol,sourceRow,destCol,destRow)
+        					echo "{1,0,0,0,0,0,0,0}";
+        				}
         			}else{
         			
         				echo "Error: " . $sql . "<br>" . $conn->error;
@@ -88,7 +145,7 @@
 						Games 
 					SET 
 						numOfPlayers = 2,
-						currentPlayerTurn = 0,
+						currentPlayerTurn = 1,
 						sourceCol = 0, 
 						sourceRow = 0,
 						destCol = 0,
@@ -98,33 +155,50 @@
 						
 				if($conn->query($sql) === TRUE)
         			{
-        				$gameStatusString = 
-		  			"{
-		  				status: 1,
-		  				gameID : '".$_POST['gameID']."',
-		  				numOfPlayers : 2,
-		  				currentPlayerTurn: 0,
-		  				sourceCol: 0,
-		  				sourceRow: 0,
-		  				destCol: 0,
-		  				destRow: 0
-		  			 }";
+        				if($_POST['source'] == "PC")
+        				{
+	        				$gameStatusString = 
+			  			"{
+			  				status: 1,
+			  				gameID : '".$_POST['gameID']."',
+			  				numOfPlayers : 2,
+			  				currentPlayerTurn: 1,
+			  				sourceCol: 0,
+			  				sourceRow: 0,
+			  				destCol: 0,
+			  				destRow: 0
+			  			 }";
+			  			
+						  
+        				}
+        				else
+        				{
+        					$gameStatusString = "{1," . $_POST['gameID'] . ",2,1,0,0,0,0}";
+        					
+        				}
+        			
 		  			
 					echo $gameStatusString;   
 
         			}else{
-        			
-        				$gameStatusString = 
-		  			"{
-		  				status: -1,
-		  				gameID : '".$_POST['gameID']."',
-		  				numOfPlayers : 1,
-		  				currentPlayerTurn: 0,
-		  				sourceCol: 0,
-		  				sourceRow: 0,
-		  				destCol: 0,
-		  				destRow: 0
-		  			 }";
+        				if($_POST['source'] == "PC")
+        				{
+	        				$gameStatusString = 
+			  			"{
+			  				status: -1,
+			  				gameID : '".$_POST['gameID']."',
+			  				numOfPlayers : 1,
+			  				currentPlayerTurn: 0,
+			  				sourceCol: 0,
+			  				sourceRow: 0,
+			  				destCol: 0,
+			  				destRow: 0
+			  			 }";
+        				}
+        				else
+        				{
+        					$gameStatusString = "{-1," . $_POST['gameID'] . ",1,0,0,0,0,0}";
+        				}
 		  			
 					echo $gameStatusString;   
         			}
